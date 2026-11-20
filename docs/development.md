@@ -31,6 +31,16 @@ After changing the site, check that it opens with no server (`open site/index.ht
 python3 -m http.server 4173 --directory site
 ```
 
+## Deploying the site
+
+The site is on Cloudflare Pages as the project `studynotch`: [studynotch.pages.dev](https://studynotch.pages.dev). It is the `site/` folder as it is; `site/_headers` sets its security headers. Commit first, then:
+
+```bash
+npx --yes wrangler@4 pages deploy site --project-name studynotch --branch main --commit-hash "$(git rev-parse HEAD)" --commit-message "$(git log -1 --format=%s)"
+```
+
+Signing in to Cloudflare (`npx wrangler@4 login`) is done by the owner of the account.
+
 ## Layout
 
 | Path | What it is |

@@ -18,6 +18,7 @@ A study helper that lives in the Mac’s notch. No server: it runs only on the M
 - Commits read like catchbunny's: one change per commit, the subject a plain sentence about what changed for the user (no `feat:` prefixes), a body that says what and why in the project's own words. No co-author or attribution lines.
 - Never commit `.build/`, `build/`, anything from `~/StudyNotch`, sign-ins, keys or the user's own course files. README pictures use the example courses (MATH 237, STAT 230, ACTSCI 221) and example accounts only.
 - The repo's visibility is the user's call; don't change it without being asked.
+- The site is deployed on Cloudflare Pages, project `studynotch`, at https://studynotch.pages.dev (first deployed 2026-11-20 at the user's request). The command is in `docs/development.md`. Deploy only committed work, and only when the user asks for it; after a deploy, open the live pages and check them (status, pictures, console, headers). The Cloudflare sign-in is the user's.
 
 ## Build and check
 

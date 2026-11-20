@@ -7,6 +7,7 @@
   The answer opens right where you were reading. No server: everything runs on your Mac.
 </p>
 <p align="center">
+  <a href="https://studynotch.pages.dev"><b>Website</b></a> &nbsp;|&nbsp;
   <a href="#quick-start">Quick start</a> &nbsp;|&nbsp;
   <a href="#how-a-question-works">How a question works</a> &nbsp;|&nbsp;
   <a href="#connect-an-ai">Connect an AI</a> &nbsp;|&nbsp;
@@ -92,15 +93,15 @@ There is no StudyNotch server and no account.
 
 ## Docs
 
-The full guide is the website in [`site/`](site/). It is plain HTML with no build step: open `site/index.html` in a browser.
+The full guide is the website, [studynotch.pages.dev](https://studynotch.pages.dev). Its source is [`site/`](site/), plain HTML with no build step, so `site/index.html` also opens straight from disk.
 
 | Page | What is in it |
 |---|---|
-| [Get started](site/docs/index.html) | Building it, the first launch, adding a course and its files |
-| [Connect an AI](site/docs/connect.html) | Each AI, another account, where questions go, troubleshooting |
-| [Using it](site/docs/use.html) | The island, sessions, asking, drift cards, the mascot |
-| [How it works](site/docs/how-it-works.html) | The parts on the Mac, the order of one question, permissions |
-| [Build log](site/docs/build-log.html) | What changed and why, decisions, tests, the code layout |
+| [Get started](https://studynotch.pages.dev/docs/) | Building it, the first launch, adding a course and its files |
+| [Connect an AI](https://studynotch.pages.dev/docs/connect) | Each AI, another account, where questions go, troubleshooting |
+| [Using it](https://studynotch.pages.dev/docs/use) | The island, sessions, asking, drift cards, the mascot |
+| [How it works](https://studynotch.pages.dev/docs/how-it-works) | The parts on the Mac, the order of one question, permissions |
+| [Build log](https://studynotch.pages.dev/docs/build-log) | What changed and why, decisions, tests, the code layout |
 | [Development](docs/development.md) | Building, the checks, the layout, settings and where data lives |
 | [DESIGN.md](DESIGN.md) | Colours, type and the mascot, for the app and the site |
 
