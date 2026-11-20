@@ -24,7 +24,7 @@ This file is a summary to help AI assistants such as Claude understand the proje
 
 - Mac app: Swift, SwiftUI + AppKit, SwiftPM, no external libraries. Build with `./scripts/build.sh`.
 - Website: static HTML in `site/` with no build step. The mascot is drawn in 3D by `site/assets/squat.js` and moved by `site/assets/mascot.js`; the demo is `site/assets/demo.js`.
-- Design rules: the project’s DESIGN.md. Paper, blue-black ink, highlighter yellow (#FFE94A).
+- Design rules: the project’s DESIGN.md. The site and the app follow the mascot: a softly lit black, white type in the Mac’s system font, round shapes, no accent colour.
 - What to read before working on it with an AI: the project’s CLAUDE.md.
 
 ## Not verified yet

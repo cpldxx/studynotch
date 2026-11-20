@@ -4,11 +4,11 @@ The app (the Mac notch) and the website follow the same rules. Read this before 
 
 ## Overview
 
-StudyNotch is a tool that sits next to a student reading a textbook, so its visual language comes from the desk: white paper, blue-black pen ink and a highlighter. The product also works like a highlighter: mark a sentence you don’t get, and an explanation comes.
+StudyNotch’s look comes from its mascot: a glossy black body under soft studio light, a cool rim of light on its edge, and two white painted eyes. The app is that black and white. The website is the mascot’s studio (since 2026-11-20, the user’s call: “make the landing page match the mascot”): a deep, softly lit black, white type, round shapes, edges caught by the rim light, and one faint light of colour. The only bright thing on the page is the demo’s Mac screen with a lecture PDF on it, because that is what the student is reading.
 
 - The app is white and grey on black (the user's call, 2026-11-19). White marks "press this now", "the text you picked" and "how much you’ve done" (the progress ring, today’s bar, the running course’s dot). The mascot is black with white eyes.
 - One spoonful of colour: a faint light rising behind a card, the question window and the mascot, in the state's colour (Glow, below). It is only ever a soft gradient, never a fill, a dot, a border or text. Nothing else in the app has colour.
-- Highlighter yellow belongs to the website (its buttons, headline marks and the demo textbook's picked sentence), not to the app.
+- No yellow any more, on the web either. Picked text is white on a white band; on the demo’s paper page it takes the mascot’s colours, a black band with white text.
 - The notch island is always pure black, so it reads as one piece with the hardware notch. Only the cards inside the island are a little lighter, #141518.
 - The screen never covers the book you’re reading. Point at it and it peeks out; it opens only when clicked; let go and it backs away by itself after 15 seconds.
 - The island’s structure and motion follow Coucou (MIT). The mascot, colours, words and sounds are ours.
@@ -20,30 +20,33 @@ StudyNotch is a tool that sits next to a student reading a textbook, so its visu
 
 | Name | Value | Used for |
 |---|---|---|
-| Highlighter | `#FFE94A` | Website only: the most important button, headline marks, the picked sentence on the demo page, the current step’s number in the tour. Not used in the app |
-| Pen Blue | `#1F4FD8` | Web links and focus rings |
+| Rim | `#5A6B8C` | The cool light on the mascot’s edge (the shader’s rim light, 0.35/0.42/0.55). On the web: the faint light falling from the top of the page and the edges it catches on the Mac screen, the mood stage and cards. Only ever a soft light or a 1px edge, never text or a fill |
+
+There is no accent colour. White marks the one thing to press, the picked text and progress, in the app and on the web.
 
 ### Surface
 
 | Name | Value | Used for |
 |---|---|---|
-| Paper | `#FFFFFF` | Web background |
-| Desk | `#EDF0F3` | Bands that divide web sections, the desk in the demo screen |
-| Island | `#000000` | The notch island (app, web demo) |
-| Island Fill | White 12% (8% for buttons inside cards) | Button backgrounds inside the island |
-| Card | `#141518`, border white 3.5% | Cards in the open island. Always plain: no coloured wash |
-| Pill | `#0E0F11` | Course pill background |
-| Tab On | `#1D1F23` | Selected tab background |
+| Night | `#0B0C0E` | Web background: the studio |
+| Island | `#000000` | The notch island (app, web demo), the Mac screen’s bezel, the mood stage |
+| Card | `#141518`, edge white 3.5% (web 7%) | Cards in the open island; on the web, tables, code, figures and callouts. Always plain: no coloured wash on the web |
+| Pill | `#0E0F11` | Course pill background; web tour and mood buttons |
+| Tab On | `#1D1F23` | Selected tab background; the web’s current tour step, mood and doc page |
+| Island Fill | White 12% (8% for buttons) | Button backgrounds inside the island and the web’s secondary buttons |
+| Paper | `#FFFFFF` | Only the demo’s PDF page |
+| Desk | `#EDF0F3` | Only the demo Mac’s desktop and its right-click menu |
 
 ### Text
 
 | Name | Value | Used for |
 |---|---|---|
-| Ink | `#14233B` | Web body and headings (blue-black ink) |
-| Graphite | `#566173` | Secondary web text (pencil) |
-| Island Text | `#F5F6F8` | Island body text |
-| Island Muted | `#8E939C` | Secondary island text, idle icons |
-| Island Faint | `#6B7079` | The faintest text, like the weekdays under the record bars |
+| Text | `#F5F6F8` | Headings and island text; the same white as the mascot’s eyes |
+| Body | 17px Body colour, line height 1.65, lines at most 38em | 13pt (answers 14pt, line height 1.6) |
+| Muted | `#8E939C` | Secondary text, idle icons |
+| Faint | `#6B7079` | The faintest text, like the weekdays under the record bars. Never for sentences on the web |
+| Ink | `#14233B` | Only on the demo’s paper page, and in the mascot’s speech bubble |
+| Graphite | `#566173` | Only on the demo’s paper page |
 
 ### Glow (app states)
 
@@ -63,33 +66,32 @@ Courses have no colours. They are told apart by their names.
 
 ### Font Family
 
-- Web headings: **Hahmlet** (700). A serif like a textbook’s body type, so it feels like a book.
-- Web body: **IBM Plex Sans KR** (400, 500, 600).
-- The mascot’s voice: **Gaegu** (700). Only in the web mascot’s speech bubble, where it should look like a note written in pencil. Nowhere else.
-- App: the Mac system font. The app should look like part of the Mac.
-- Monospace only for code and commands.
+- Everywhere: the Mac system font (SF Pro, `-apple-system`). The site is about a Mac app and speaks in the app’s own type. No web fonts are loaded.
+- The demo’s lecture page: the system serif (New York, `ui-serif`), because it is a printed page.
+- The mascot’s voice: the system font, 600, dark text in a white capsule, like the app’s speech bubble.
+- Monospace (SF Mono) only for code and commands.
 
 ### Hierarchy
 
 | Role | Web | App |
 |---|---|---|
-| Large heading | Hahmlet 700, clamp(36px, 6vw, 64px), line height 1.15, tracking -0.02em. On the first page, with the screen beside it, clamp(38px, 4.3vw, 58px) | Not used |
-| Section heading | Hahmlet 700, clamp(26px, 3.4vw, 38px) | 14pt semibold |
+| Large heading | System 700, clamp(36px, 6vw, 64px), line height 1.08, tracking -0.035em. On the first page, with the screen beside it, clamp(40px, 4.6vw, 64px) | Not used |
+| Section heading | System 700, clamp(28px, 3.4vw, 40px), tracking -0.03em | 14pt semibold |
 | Body | 17px, line height 1.75, lines at most 38em | 13pt (answers 14pt, line height 1.6) |
 | Card title | Not used | 12.5pt semibold |
 | Big number (time left, record) | Not used | 21pt semibold, tabular |
-| Secondary text | 14.5px Graphite | 11.5pt Island Muted |
+| Secondary text | 14.5px Muted | 11.5pt Island Muted |
 | Button | 15px 600 | 11.5pt semibold in cards, 12.5pt in the question window |
 | Pill label | Not used | 11pt semibold |
-| Mascot bubble | Gaegu 700, 21px (phone 19px), line height 1.25 | System font 11.5pt semibold |
+| Mascot bubble | System 600, 17px (phone 15px), Ink on white | System font 11.5pt semibold |
 
 ### Principles
 
-- The website and the app are in English (the app since 2026-11-19). Answers come back in the language the question is typed in, so they can be Korean, and the web fonts (Hahmlet, IBM Plex Sans KR) keep their Korean glyphs. Keep English headings short: the first screen’s large heading is at most three lines, other headings one.
+- The website and the app are in English (the app since 2026-11-19). Answers come back in the language the question is typed in, so they can be Korean; the system font has Korean glyphs. Keep English headings short: the first screen’s large heading is at most three lines.
 - English runs longer than Korean. In the island, a label that doesn’t fit is shortened, not shrunk below the sizes here (a little scaling, at most to 0.8, is allowed for one-line labels). Render every state after changing words.
 - No text smaller than 12px on the web or 11pt in the island. The island is dense, like Coucou’s, so it fits beside the notch.
 - No eyebrow labels above headings. No all-caps labels.
-- Never recolour or italicise a single word in a heading. The highlighter goes across the whole sentence.
+- Never recolour or italicise a single word in a heading. The selection band goes across the whole sentence.
 - Tabular numbers wherever digits need to line up.
 
 ## Layout
@@ -113,9 +115,9 @@ The textbook’s "body plus margin notes" structure: short notes in a narrow col
 
 ## Elevation & Depth
 
-- The web uses almost no shadows. Separation comes from the Desk background and 1px rules.
-- Only the demo’s Mac screen has a shadow, because it is the one "object" on the page. The web mascot has one shadow, where it touches the ground (none inside the island).
-- The island has no shadows and no glows. Things under the pointer brighten a little instead.
+- The web is a dark studio lit from above: a soft Rim-coloured light falls from the top of the page, and a fainter one sits behind the Mac screen. Objects are told apart by their edges catching that light (a 1px white edge, 7–10%), not by shadows.
+- Only the demo’s Mac screen and the mascot cast a shadow, onto the ground below them, because they are the page’s two objects.
+- The island has no shadows and no glows of its own. Things under the pointer brighten a little instead.
 
 ## Shapes
 
@@ -130,29 +132,29 @@ The textbook’s "body plus margin notes" structure: short notes in a narrow col
 | Tab | 30×22pt pill |
 | Question window buttons (chips) | Full pill, at least 28pt high |
 | Text fields, list rows | 8–10pt |
-| Web buttons, tour steps, mood buttons | 10px |
+| Web buttons, tour steps, mood buttons | Full pill, like the app’s |
 | The web’s Mac screen | 8px black bezel, 24px rounding (phone 6px, 20px). The "stays on your Mac" box uses the same bezel |
 | Mood stage | 24px |
-| Web figure and table frames | 14px |
+| Web figure, table and code frames | 20px, like a card |
 
 ## Components
 
 ### Buttons
 
-- **Primary**: Highlighter background, black text. One per screen.
-- **Secondary**: in the app, Island Fill with white text; on the web, a 1px Ink border.
+- **Primary**: white background, black text, in the app and on the web. One per screen.
+- **Secondary**: Island Fill (white 8%) with white text; on the web also a 1px white 10% edge.
 - A button says exactly what happens when you press it: "I don’t get this", "Back to work", "One more".
 - No arrows at the end of button labels.
 
 ### Picked text (Quote)
 
-A picked sentence looks highlighted. In the app, Highlighter-coloured text on a Highlighter 16% background; on the web, a Highlighter band behind the text.
+In the app, picked text is white on a white 10% band. On the web, the headline gets a white 14% band drawn behind it, and on the demo’s paper page a picked sentence takes the mascot’s colours: a black band with white text.
 
 ### Open island (app)
 
 - **Tab strip**: Home, Record and Add tabs left of the notch. On the right, a session pill (during a session, when not on Home), then sounds, connections and permissions, and close icons.
-- **Card**: title row (colour dot + name + secondary text) → big number and the primary button → a row of secondary buttons. One primary button per card.
-- **Course pill**: the name only. The picked course is a lighter pill (Tab On) with white text; the others are grey. The course in session shows time left and a Highlighter dot instead of its name.
+- **Card**: title row (name + secondary text) → big number and the primary button → a row of secondary buttons. One primary button per card.
+- **Course pill**: the name only. The picked course is a lighter pill (Tab On) with white text; the others are grey. The course in session shows time left and a white dot instead of its name.
 - **Add tab**: 204pt tall (the other tabs are 160pt), so its list fits; the mascot stays where it is on the other tabs. Left card: title, a name field with one button (Add, or Rename), "Link folder" and "Add PDFs", then one quiet line. Right card: a dashed drop zone that becomes the list of folders and PDFs, each row with a ✕. The new-course page says picked things are "Kept only if you press Add".
 - **Countdown line**: bottom centre of an open island the pointer has left. Shrinks from 160pt to 0 over the last 10 seconds.
 - **Line under the island**: point at the folded island and a one-line summary appears below it in a black pill. Notices use the same place for 2.5 seconds.
@@ -168,7 +170,7 @@ One row at the top: name, docs, get started. Doc pages have a table of contents 
 ### Signature Components
 
 - **Notch island**: the black shape at the top centre of the screen. Springs between three sizes: hidden, peek and open.
-- **Highlighter stroke**: drawn behind the text from left to right, the second line after the first (0.9 seconds).
+- **Selection sweep**: a white band drawn behind the headline from left to right, the second line after the first (0.9 seconds), the way text is selected.
 - **Tour**: seven scenes from one study hour. A numbered button switches the Mac screen above to that scene, and its description appears right below. The scenes are a real sequence, so they are numbered.
 - **Mascot**: see below.
 
@@ -223,7 +225,7 @@ What it does in the app:
 
 ### Do
 
-- Use highlighter yellow sparingly.
+- Keep it black, white and grey. Colour is only ever a faint light.
 - On a failure screen, say why and what to do next.
 - Show a state with shape and words together.
 - Show the real app screens as they are.
@@ -253,7 +255,7 @@ At least 44px high on the web. App chips at least 28pt high, at least 6pt apart.
 
 ## Motion
 
-- Web: when the page opens, the highlighter stroke is drawn and the mascot lands on top of the screen. After that, only reactions to what the user does move. The one exception is the mascot’s breathing and blinking.
+- Web: when the page opens, the selection band is drawn and the mascot lands on top of the screen. After that, only reactions to what the user does move. The one exception is the mascot’s breathing and blinking.
   - When the mascot moves: a spring (stiffness 120, damping 16) with a small 0.46-second arc on top, and a 0.28-second squash on landing.
   - When pressed: a 0.1-second squash, a 0.62-second hop and one spin (spring 110/13). Pressing quickly many times never stacks more than one spin.
   - Buttons scale to 0.97 when pressed (0.12 seconds). Hover changes only on devices with a mouse.

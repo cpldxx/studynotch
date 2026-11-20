@@ -1,49 +1,69 @@
-/* StudyNotch site. Tokens mirror DESIGN.md: paper, blue-black ink, one highlighter. */
+/* StudyNotch site. Tokens mirror DESIGN.md: the mascot's studio. A softly lit black, white type,
+   round shapes, edges caught by the rim light. The demo's Mac screen and its lecture page are the
+   only bright paper. */
 :root {
+  --night: #0B0C0E;
+  --card: #141518;
+  --pill: #0E0F11;
+  --tab-on: #1D1F23;
+  --text: #F5F6F8;
+  --body: #C7CBD2;
+  --muted: #8E939C;
+  --faint: #6B7079;
+  --rim: 90, 107, 140;
+  --edge: rgba(255, 255, 255, .08);
+  --edge-strong: rgba(255, 255, 255, .16);
+  --fill: rgba(255, 255, 255, .08);
+  --island: #000000;
+  --island-fill: rgba(255, 255, 255, .12);
+  --island-muted: #8E939C;
+  /* Inside the demo's Mac only: a Mac in light mode with a lecture PDF open. */
   --paper: #FFFFFF;
   --desk: #EDF0F3;
   --ink: #14233B;
   --graphite: #566173;
   --rule: #D5DBE3;
-  --hl: #FFE94A;
-  --pen: #1F4FD8;
-  --island: #000000;
-  --island-fill: rgba(255, 255, 255, .12);
-  --island-muted: #8E939C;
-  --font-display: "Hahmlet", "Noto Serif KR", "AppleMyungjo", serif;
-  --font-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", system-ui, sans-serif;
+  --font-page: ui-serif, "New York", "Iowan Old Style", Georgia, serif;
+  --font-body: var(--font-ui);
   --font-code: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-  --ui: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "IBM Plex Sans KR", sans-serif;
-  color-scheme: light;
+  --ui: var(--font-ui);
+  color-scheme: dark;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
 body {
   margin: 0;
-  background: var(--paper);
-  color: var(--ink);
-  font: 400 17px/1.75 var(--font-body);
+  /* The studio's key light, falling from above, in the colour of the mascot's rim. */
+  background:
+    radial-gradient(760px 520px at 66% -60px, rgba(var(--rim), .34), transparent 70%) no-repeat,
+    radial-gradient(1400px 700px at 40% -260px, rgba(var(--rim), .18), transparent 72%) no-repeat,
+    var(--night);
+  color: var(--body);
+  font: 400 17px/1.65 var(--font-body);
   word-break: keep-all;
   overflow-wrap: anywhere;
   -webkit-font-smoothing: antialiased;
 }
-::selection { background: var(--hl); color: var(--ink); }
+::selection { background: rgba(255, 255, 255, .24); color: #fff; }
 img { max-width: 100%; height: auto; display: block; }
-a { color: var(--pen); text-underline-offset: 3px; text-decoration-thickness: 1px; }
-a:hover { text-decoration-thickness: 2px; }
-:focus-visible { outline: 2px solid var(--pen); outline-offset: 3px; border-radius: 4px; }
+a { color: var(--text); text-underline-offset: 3px; text-decoration-thickness: 1px; text-decoration-color: rgba(255, 255, 255, .38); }
+a:hover { text-decoration-color: #fff; }
+:focus-visible { outline: 2px solid #fff; outline-offset: 3px; border-radius: 6px; }
 h1, h2, h3 { margin: 0; text-wrap: balance; }
-h1, h2 { font-family: var(--font-display); font-weight: 700; letter-spacing: -.02em; line-height: 1.2; }
-h1 { font-size: clamp(36px, 6vw, 64px); line-height: 1.15; }
-h2 { font-size: clamp(26px, 3.4vw, 38px); }
-h3 { font-size: 19px; font-weight: 600; line-height: 1.45; }
+h1, h2, h3 { color: var(--text); }
+h1, h2 { font-family: var(--font-display); font-weight: 700; letter-spacing: -.03em; line-height: 1.12; }
+h1 { font-size: clamp(36px, 6vw, 64px); line-height: 1.14; letter-spacing: -.035em; }
+h2 { font-size: clamp(28px, 3.4vw, 40px); }
+h3 { font-size: 19px; font-weight: 600; line-height: 1.45; letter-spacing: -.01em; }
 p { margin: 0; }
 code, kbd, pre { font-family: var(--font-code); }
-code { font-size: .88em; background: var(--desk); padding: 2px 6px; border-radius: 5px; }
+code { font-size: .88em; background: var(--fill); color: var(--text); padding: 2px 6px; border-radius: 6px; }
 [hidden] { display: none !important; }
 
-.skip { position: absolute; left: 16px; top: -60px; background: var(--ink); color: #fff; padding: 10px 14px; border-radius: 8px; z-index: 20; }
+.skip { position: absolute; left: 16px; top: -60px; background: #fff; color: #000; padding: 10px 14px; border-radius: 8px; z-index: 20; }
 .skip:focus { top: 12px; }
 
 .wrap { width: min(1120px, 100%); margin-inline: auto; padding-inline: 24px; }
@@ -51,37 +71,41 @@ code { font-size: .88em; background: var(--desk); padding: 2px 6px; border-radiu
 
 /* Header */
 .site-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 18px; flex-wrap: wrap; }
-.brand { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; font-weight: 600; font-size: 17px; color: var(--ink); text-decoration: none; }
-.brand img { width: 30px; height: 30px; }
+.brand { display: inline-flex; align-items: center; gap: 9px; min-height: 44px; font-weight: 600; font-size: 17px; letter-spacing: -.01em; color: var(--text); text-decoration: none; }
+.brand img { width: 32px; height: 32px; }
 .site-nav { display: flex; align-items: center; gap: 6px 22px; flex-wrap: wrap; font-size: 15.5px; }
-.site-nav a:not(.btn) { color: var(--ink); text-decoration: none; padding-block: 10px; }
-.site-nav a:not(.btn):hover { text-decoration: underline; }
-.site-nav a[aria-current="page"] { text-decoration: underline; text-decoration-thickness: 2px; }
+.site-nav a:not(.btn) { color: var(--muted); text-decoration: none; padding-block: 10px; transition: color .15s ease; }
+.site-nav a:not(.btn):hover { color: var(--text); }
+.site-nav a[aria-current="page"] { color: var(--text); }
 
 /* Buttons */
 .btn {
   display: inline-flex; align-items: center; justify-content: center;
-  min-height: 46px; padding: 0 20px; border-radius: 10px;
+  min-height: 46px; padding: 0 22px; border-radius: 999px;
   font: 600 15px/1 var(--font-body); text-decoration: none; cursor: pointer;
-  border: 1px solid var(--ink); background: var(--paper); color: var(--ink);
+  border: 1px solid rgba(255, 255, 255, .1); background: var(--fill); color: var(--text);
   touch-action: manipulation; -webkit-tap-highlight-color: transparent;
-  transition: background-color .15s ease, color .15s ease, border-color .15s ease, transform .12s cubic-bezier(.23, 1, .32, 1);
+  transition: background-color .15s ease, color .15s ease, border-color .15s ease, box-shadow .2s ease, transform .22s cubic-bezier(.3, 1.4, .5, 1);
 }
-.btn-primary { background: var(--hl); border-color: var(--hl); }
-.btn:active { transform: scale(.97); }
+/* The one thing to press is white, as in the app. */
+.btn-primary { background: var(--text); border-color: var(--text); color: #000; }
+.btn:active { transform: scale(.96); }
 @media (hover: hover) and (pointer: fine) {
-  .btn:hover { background: var(--ink); color: #fff; }
-  .btn-primary:hover { background: var(--ink); border-color: var(--ink); color: var(--hl); }
+  .btn:hover { background: rgba(255, 255, 255, .14); transform: scale(1.03); }
+  .btn-primary:hover { background: #fff; box-shadow: 0 0 0 5px rgba(255, 255, 255, .07), 0 10px 34px -6px rgba(255, 255, 255, .22); }
 }
 .btn-small { min-height: 44px; padding: 0 16px; }
 .actions { display: flex; flex-wrap: wrap; gap: 12px; }
 
 /* The highlighter line: the one authored motion on the page. */
+/* The selection band: the headline is picked the way text is picked in the app, white on white. */
 .hl {
-  background-image: linear-gradient(transparent 56%, var(--hl) 56%, var(--hl) 94%, transparent 94%);
+  background-image: linear-gradient(rgba(255, 255, 255, .14), rgba(255, 255, 255, .14));
   background-repeat: no-repeat;
   background-size: 100% 100%;
-  padding-inline: .08em;
+  padding: 0 .1em;
+  border-radius: .1em;
+  -webkit-box-decoration-break: clone; box-decoration-break: clone;
 }
 .hl.hl-wait { background-size: 0% 100%; }
 @media (prefers-reduced-motion: no-preference) {
@@ -89,11 +113,8 @@ code { font-size: .88em; background: var(--desk); padding: 2px 6px; border-radiu
 }
 
 /* ---------- Home ---------- */
-/* The page sits on the desk; white bands alternate with it. One container for the whole page. */
-.home { background: var(--desk); }
+/* One studio for the whole page: sections are told apart by space, not by bands. */
 .home .wrap { width: min(1264px, 100%); }
-.home .band { background: var(--paper); }
-.home .band-desk { background: var(--desk); }
 /* Neighbouring bands on the same ground read as one block. */
 .home .band-desk + .band-desk, .home .band:not(.band-desk) + .band:not(.band-desk) { padding-top: 0; }
 
@@ -106,17 +127,23 @@ code { font-size: .88em; background: var(--desk); padding: 2px 6px; border-radiu
   grid-template-areas: "copy demo" "cap rail" "cap detail"; gap: 0 clamp(32px, 4.5vw, 64px); align-items: center;
 }
 .scene-copy { grid-area: copy; display: grid; gap: 22px; }
-.scene-copy h1 { font-size: clamp(38px, 4.3vw, 58px); }
-.scene-copy p { font-size: 18.5px; line-height: 1.7; color: var(--graphite); max-width: 30em; }
-.scene-copy .hero-fact { font-size: 15px; line-height: 1.65; }
+.scene-copy h1 { font-size: clamp(40px, 4.6vw, 64px); }
+.scene-copy p { font-size: 18.5px; line-height: 1.65; color: var(--body); max-width: 30em; }
+.scene-copy .hero-fact { font-size: 15px; line-height: 1.6; color: var(--muted); }
 
-.demo { grid-area: demo; position: relative; min-width: 0; --h: clamp(108px, 15vh, 136px); --perch: var(--h); padding-top: var(--perch); }
+.demo { grid-area: demo; position: relative; isolation: isolate; min-width: 0; --h: clamp(108px, 15vh, 136px); --perch: var(--h); padding-top: var(--perch); }
+/* A soft light pooled behind the screen, the way a lit display brightens a dark room. */
+.demo::before {
+  content: ""; position: absolute; z-index: -1; left: -8%; right: -8%; top: 4%; bottom: -10%; pointer-events: none;
+  background: radial-gradient(closest-side, rgba(var(--rim), .3), transparent 80%);
+}
 /* The display: the page's one object, so the only thing with a shadow. The black bezel is the same
    black as the island, which is why the island reads as the notch. */
 .mac {
   position: relative; height: 548px; overflow: hidden; background: var(--rule);
   border: 8px solid var(--island); border-radius: 24px;
-  box-shadow: 0 30px 60px -30px rgba(20, 35, 59, .45);
+  /* Its rim catches the light; its shadow falls on the ground. */
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, .12), 0 50px 80px -40px rgba(0, 0, 0, .9);
 }
 @media (min-width: 1001px) { .mac { height: clamp(400px, calc(100vh - 276px - var(--h)), 548px); } }
 .mac-bar {
@@ -129,7 +156,7 @@ code { font-size: .88em; background: var(--desk); padding: 2px 6px; border-radiu
 .sheet {
   width: min(620px, calc(100% - 28px)); min-height: 100%; margin: 20px auto 0; background: var(--paper);
   border-radius: 6px 6px 0 0; padding: 26px clamp(18px, 4vw, 40px) 40px;
-  font-family: var(--font-display); font-weight: 400; font-size: 16px; line-height: 1.8;
+  font-family: var(--font-page); font-weight: 400; font-size: 16px; line-height: 1.8; color: var(--ink);
 }
 .sheet p + p { margin-top: 10px; }
 .sheet .running { font: 400 13px/1.5 var(--font-body); color: var(--graphite); margin-bottom: 14px; }
@@ -141,8 +168,9 @@ code { font-size: .88em; background: var(--desk); padding: 2px 6px; border-radiu
   -webkit-box-decoration-break: clone; box-decoration-break: clone;
   transition: background-color .15s ease;
 }
-.sentence.picked { background: var(--hl); text-decoration: none; }
-@media (hover: hover) and (pointer: fine) { .sentence:not(.picked):hover { background: rgba(255, 233, 74, .45); } }
+/* A picked sentence takes the mascot's colours: black with white. */
+.sentence.picked { background: #000; color: #fff; text-decoration: none; box-shadow: 0 0 0 2px #000; }
+@media (hover: hover) and (pointer: fine) { .sentence:not(.picked):hover { background: rgba(0, 0, 0, .07); } }
 
 /* The mascot on the screen. It rests on the top bezel, straight above its seat in the island, so
    going in is one short jump down. The script moves it. */
@@ -158,8 +186,9 @@ code { font-size: .88em; background: var(--desk); padding: 2px 6px; border-radiu
   position: absolute; z-index: 5; margin: 0; pointer-events: none;
   left: calc(26px + var(--h) * .9 + 16px); bottom: calc(100% - var(--perch) + 26px);
   max-width: min(330px, calc(100% - var(--h) * .9 - 56px));
-  background: var(--paper); color: var(--ink); border: 1.5px solid var(--ink); border-radius: 18px 18px 18px 4px;
-  padding: 8px 16px 10px; font: 700 21px/1.25 "Gaegu", var(--font-body); text-wrap: balance;
+  background: var(--text); color: var(--ink); border-radius: 18px 18px 18px 5px;
+  box-shadow: 0 10px 28px -6px rgba(0, 0, 0, .6);
+  padding: 9px 16px 10px; font: 600 17px/1.3 var(--font-ui); letter-spacing: -.01em; text-wrap: balance;
   opacity: 0; transform: translateY(6px) scale(.94); transform-origin: 0 100%;
 }
 .say.on { opacity: 1; transform: none; }
@@ -171,33 +200,34 @@ code { font-size: .88em; background: var(--desk); padding: 2px 6px; border-radiu
    is a plain list with every step's text. */
 .tour { grid-area: rail; align-self: start; list-style: none; margin: 18px 0 0; padding: 0; counter-reset: step; display: grid; gap: 14px; }
 .tour li { counter-increment: step; }
-.tour li p { margin-top: 6px; color: var(--graphite); font-size: 16px; }
+.tour li p { margin-top: 6px; color: var(--muted); font-size: 16px; }
 .tour.is-live { display: flex; flex-wrap: wrap; gap: 6px; }
 .tour.is-live li { flex: 1 1 auto; }
 .tour.is-live li p { display: none; }
 .tour-step {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: 100%; min-height: 44px; padding: 0 11px 0 7px; cursor: pointer;
-  border: 1px solid var(--rule); border-radius: 10px; background: var(--paper); color: var(--ink);
-  font: 500 15px/1 var(--font-body); white-space: nowrap; touch-action: manipulation; -webkit-tap-highlight-color: transparent;
-  transition: background-color .15s ease, border-color .15s ease, color .15s ease, transform .12s cubic-bezier(.23, 1, .32, 1);
+  border: 1px solid var(--edge); border-radius: 999px; background: var(--pill); color: var(--muted);
+  font: 600 14.5px/1 var(--font-body); white-space: nowrap; touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+  transition: background-color .15s ease, border-color .15s ease, color .15s ease, transform .22s cubic-bezier(.3, 1.4, .5, 1);
 }
 .tour-step::before {
   content: counter(step); display: grid; place-items: center; flex: none; width: 22px; height: 22px; border-radius: 50%;
-  background: var(--desk); color: var(--ink); font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums;
-  transition: background-color .15s ease;
+  background: var(--fill); color: var(--text); font-size: 12.5px; font-weight: 600; font-variant-numeric: tabular-nums;
+  transition: background-color .15s ease, color .15s ease;
 }
-.tour-step:active { transform: scale(.97); }
-.tour-step[aria-current="step"] { background: var(--ink); border-color: var(--ink); color: #fff; }
-.tour-step[aria-current="step"]::before { background: var(--hl); }
-@media (hover: hover) and (pointer: fine) { .tour-step:hover { border-color: var(--ink); } }
+.tour-step:active { transform: scale(.96); }
+/* Like the course pills in the island: the current one is lighter, its number white. */
+.tour-step[aria-current="step"] { background: var(--tab-on); border-color: rgba(255, 255, 255, .22); color: var(--text); }
+.tour-step[aria-current="step"]::before { background: #fff; color: #000; }
+@media (hover: hover) and (pointer: fine) { .tour-step:hover { border-color: rgba(255, 255, 255, .2); color: var(--text); transform: scale(1.03); } }
 /* The text of the current step sits right under the steps, next to the screen it describes. */
 .tour-detail { grid-area: detail; align-self: start; margin-top: 14px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px 20px; align-items: start; }
-.tour-detail p { color: var(--graphite); font-size: 15.5px; line-height: 1.65; min-height: 4.95em; }
-.tour-detail strong { color: var(--ink); font-weight: 600; }
+.tour-detail p { color: var(--muted); font-size: 15.5px; line-height: 1.65; min-height: 4.95em; }
+.tour-detail strong { color: var(--text); font-weight: 600; }
 .tour-detail strong:not(:empty) { margin-right: .45em; }
 .tour-cap { grid-area: cap; align-self: start; margin-top: 18px; display: grid; gap: 6px; }
 .tour-cap h2 { font-size: clamp(22px, 2.2vw, 27px); line-height: 44px; }
-.tour-cap p { color: var(--graphite); font-size: 14.5px; line-height: 1.65; max-width: 27em; }
+.tour-cap p { color: var(--muted); font-size: 14.5px; line-height: 1.65; max-width: 27em; }
 
 @media (max-width: 1000px) {
   /* One column: the tour's heading comes before its steps, the example note last. */
@@ -217,7 +247,7 @@ code { font-size: .88em; background: var(--desk); padding: 2px 6px; border-radiu
   .mac { height: 480px; border-width: 6px; border-radius: 20px; }
   .mac-bar i { display: none; }
   .mascot.rover { left: 14px; }
-  .say { left: calc(14px + var(--h) * .9 + 10px); bottom: calc(100% - var(--perch) + 20px); max-width: calc(100% - var(--h) * .9 - 30px); font-size: 19px; padding: 6px 13px 8px; }
+  .say { left: calc(14px + var(--h) * .9 + 10px); bottom: calc(100% - var(--perch) + 20px); max-width: calc(100% - var(--h) * .9 - 30px); font-size: 15px; padding: 7px 13px 8px; }
   .sheet { font-size: 15px; padding-top: 20px; }
 }
 /* Where seven named steps do not fit on one row: seven numbers, and the step's name moves into the text under them. */
@@ -420,11 +450,11 @@ code { font-size: .88em; background: var(--desk); padding: 2px 6px; border-radiu
    1em is its height; it is drawn in a square. assets/mascot.js turns it, spins it and changes its face. */
 .mascot {
   position: relative; display: inline-block; flex: none; width: 1em; height: 1em; font-size: var(--h, 150px); line-height: 1;
-  margin: 0; padding: 0; border: 0; background: none; color: var(--ink); border-radius: .2em; cursor: grab;
+  margin: 0; padding: 0; border: 0; background: none; color: var(--text); border-radius: .2em; cursor: grab;
   touch-action: pan-y; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;
 }
 .mascot.is-held { cursor: grabbing; }
-.mascot:focus-visible { outline: calc(2px / var(--s, 1)) solid var(--pen); outline-offset: calc(6px / var(--s, 1)); }
+.mascot:focus-visible { outline: calc(2px / var(--s, 1)) solid #fff; outline-offset: calc(6px / var(--s, 1)); }
 /* The one spoonful of colour: a faint light behind the mascot, in the state's colour (demo.js sets it). */
 .mascot-glow {
   position: absolute; left: 50%; top: 50%; width: 2.3em; height: 2.3em; margin: -1.15em 0 0 -1.15em; border-radius: 50%;
@@ -433,15 +463,15 @@ code { font-size: .88em; background: var(--desk); padding: 2px 6px; border-radiu
 }
 .mascot-shadow {
   position: absolute; left: 14%; right: 14%; bottom: .02em; height: .12em; border-radius: 50%; pointer-events: none;
-  background: radial-gradient(closest-side, rgba(20, 35, 59, .32), transparent); transition: opacity .3s ease;
+  background: radial-gradient(closest-side, rgba(0, 0, 0, .7), transparent); transition: opacity .3s ease;
 }
 .mascot-rig { position: absolute; inset: 0; transform-origin: 50% 92%; }
 .mascot-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 /* A line of its own, for the mascots that are not on the screen. The same pencilled note. */
 .mascot-say {
   position: absolute; left: 92%; bottom: 88%; white-space: nowrap; pointer-events: none; z-index: 1;
-  background: var(--paper); color: var(--ink); border: 1.5px solid var(--ink); border-radius: 16px 16px 16px 4px;
-  padding: 6px 14px 8px; font: 700 19px/1.2 "Gaegu", var(--font-body);
+  background: var(--text); color: var(--ink); border-radius: 16px 16px 16px 5px; box-shadow: 0 10px 28px -6px rgba(0, 0, 0, .6);
+  padding: 7px 14px 8px; font: 600 16px/1.25 var(--font-ui); letter-spacing: -.01em;
 }
 /* A still picture of it for small places (course pills, the popup's title). */
 .mascot-flat { display: block; width: 22px; height: 22px; }
@@ -467,21 +497,22 @@ code { font-size: .88em; background: var(--desk); padding: 2px 6px; border-radiu
 /* Moods: the seven faces, on the island's black so the state colours show. */
 .moods { display: grid; grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); gap: 32px clamp(32px, 5vw, 72px); align-items: center; }
 .moods-copy { display: grid; gap: 18px; }
-.moods-copy p { color: var(--graphite); max-width: 34em; }
+.moods-copy p { color: var(--body); max-width: 34em; }
 .mood-list { display: flex; flex-wrap: wrap; gap: 8px; }
 .mood {
-  min-height: 44px; padding: 0 16px; border: 1px solid var(--rule); border-radius: 10px; background: var(--paper); color: var(--ink);
-  font: 500 15.5px/1 var(--font-body); cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent;
-  transition: background-color .15s ease, border-color .15s ease, color .15s ease, transform .12s cubic-bezier(.23, 1, .32, 1);
+  min-height: 44px; padding: 0 18px; border: 1px solid var(--edge); border-radius: 999px; background: var(--pill); color: var(--muted);
+  font: 600 15px/1 var(--font-body); cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+  transition: background-color .15s ease, border-color .15s ease, color .15s ease, transform .22s cubic-bezier(.3, 1.4, .5, 1);
 }
-.mood:active { transform: scale(.97); }
-@media (hover: hover) and (pointer: fine) { .mood:hover { border-color: var(--ink); } }
-.mood[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: #fff; }
-.moods-copy .mood-when { min-height: 3.5em; color: var(--ink); }
+.mood:active { transform: scale(.96); }
+@media (hover: hover) and (pointer: fine) { .mood:hover { border-color: rgba(255, 255, 255, .2); color: var(--text); transform: scale(1.03); } }
+.mood[aria-pressed="true"] { background: var(--tab-on); border-color: rgba(255, 255, 255, .22); color: var(--text); }
+.moods-copy .mood-when { min-height: 3.5em; color: var(--text); }
 .mood-stage {
   --h: 190px; --glow: #fff; --glow-a: .14;
   position: relative; display: grid; place-items: center; min-height: 400px; overflow: hidden;
-  background: var(--island); color: #F5F6F8; border-radius: 24px;
+  background: radial-gradient(90% 70% at 50% -10%, rgba(var(--rim), .28), transparent 70%), var(--island); color: #F5F6F8; border-radius: 28px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, .08), inset 0 1px 0 rgba(255, 255, 255, .07);
 }
 .mood-stage::before {
   content: ""; position: absolute; inset: 0; pointer-events: none; opacity: calc(var(--glow-a) * .7);
@@ -496,31 +527,30 @@ code { font-size: .88em; background: var(--desk); padding: 2px 6px; border-radiu
 
 /* Sections */
 .band { padding-block: clamp(64px, 9vw, 112px); }
-.band-desk { background: var(--desk); }
 .lede { display: grid; gap: 16px; max-width: 44rem; margin-bottom: clamp(32px, 5vw, 56px); }
-.lede p { color: var(--graphite); max-width: 38em; }
+.lede p { color: var(--body); max-width: 38em; }
 
 /* Body with margin notes, the way a textbook is set. */
 .noted { display: grid; grid-template-columns: minmax(0, 8fr) minmax(0, 4fr); gap: 28px 56px; align-items: start; }
 .noted > :first-child { min-width: 0; display: grid; gap: 20px; }
 .noted > :first-child > p { max-width: 38em; }
-.margin-note { font-size: 14.5px; line-height: 1.65; color: var(--graphite); border-top: 1px solid var(--rule); padding-top: 14px; }
+.margin-note { font-size: 14.5px; line-height: 1.65; color: var(--muted); border-top: 1px solid var(--edge); padding-top: 14px; }
 .margin-note + .margin-note { margin-top: 22px; }
 @media (max-width: 900px) { .noted { grid-template-columns: minmax(0, 1fr); } }
 
-.table-wrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 14px; background: var(--paper); }
+.table-wrap { overflow-x: auto; border: 1px solid var(--edge); border-radius: 20px; background: var(--card); }
 table { border-collapse: collapse; width: 100%; font-size: 15.5px; line-height: 1.6; overflow-wrap: break-word; }
-th, td { text-align: left; vertical-align: top; padding: 14px 16px; border-bottom: 1px solid var(--rule); }
+th, td { text-align: left; vertical-align: top; padding: 14px 18px; border-bottom: 1px solid var(--edge); }
 tr:last-child td { border-bottom: 0; }
-th { font-size: 14px; font-weight: 600; color: var(--graphite); white-space: nowrap; }
-td strong { font-weight: 600; }
+th { font-size: 14px; font-weight: 600; color: var(--muted); white-space: nowrap; }
+td strong { font-weight: 600; color: var(--text); }
 
 /* What stays and what leaves: the first list sits inside a small Mac, the second outside it. */
 .inout { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); gap: 24px 36px; align-items: start; }
-.inout h3 { padding-bottom: 10px; border-bottom: 1px solid var(--ink); margin-bottom: 14px; }
+.inout h3 { padding-bottom: 10px; border-bottom: 1px solid var(--edge-strong); margin-bottom: 14px; }
 .inout ul { margin: 0; padding-left: 1.1em; display: grid; gap: 8px; font-size: 16px; }
-.inout li::marker { color: var(--graphite); }
-.inout .in-mac { border: 8px solid var(--island); border-radius: 24px; background: var(--desk); padding: 18px 22px 24px; }
+.inout li::marker { color: var(--muted); }
+.inout .in-mac { border: 8px solid var(--island); border-radius: 24px; background: var(--card); padding: 18px 22px 24px; box-shadow: 0 0 0 1px rgba(255, 255, 255, .12); }
 .inout .out-mac { padding: 26px 0 0; }
 
 /* A still piece of the island, where a section talks about it. Not a control. */
@@ -530,15 +560,15 @@ td strong { font-weight: 600; }
 .isl-piece .isl-pill { display: flex; align-items: center; }
 .isl-piece .isl-card { height: 92px; }
 
-pre { margin: 0; background: var(--ink); color: #E8EDF5; border-radius: 14px; padding: 18px 20px; overflow-x: auto; font-size: 14px; line-height: 1.65; }
+pre { margin: 0; background: var(--card); color: #D9DDE3; border: 1px solid var(--edge); border-radius: 20px; padding: 18px 20px; overflow-x: auto; font-size: 14px; line-height: 1.65; }
 @media (max-width: 560px) { pre { font-size: 12.5px; padding: 14px; } }
 pre code { background: none; padding: 0; font-size: inherit; color: inherit; }
-pre .dim { color: #9FB0C8; }
+pre .dim { color: var(--muted); }
 
 /* Every answer is open: six short ones do not need an accordion. */
 .faq { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 28px 56px; }
 .faq h3 { font-size: 17px; }
-.faq p { margin-top: 6px; color: var(--graphite); max-width: 38em; }
+.faq p { margin-top: 6px; color: var(--body); max-width: 38em; }
 
 /* The end of the page: the last call on the left line, the mascot waiting on the right. */
 .end { display: grid; grid-template-columns: minmax(0, 40rem) auto; justify-content: space-between; align-items: end; gap: 32px; }
@@ -553,10 +583,10 @@ pre .dim { color: #9FB0C8; }
   .mood-stage .mascot-say { left: 50%; bottom: 98%; translate: -50% 0; border-radius: 16px; transform-origin: 50% 100%; }
 }
 .closing { display: grid; gap: 22px; max-width: 40rem; }
-.closing p { color: var(--graphite); }
+.closing p { color: var(--body); }
 
-.site-foot { position: relative; padding-block: 36px 56px; font-size: 14.5px; color: var(--graphite); display: grid; gap: 14px; }
-.site-foot::before { content: ""; position: absolute; top: 0; left: 24px; right: 24px; border-top: 1px solid var(--rule); }
+.site-foot { position: relative; padding-block: 36px 56px; font-size: 14.5px; color: var(--muted); display: grid; gap: 14px; }
+.site-foot::before { content: ""; position: absolute; top: 0; left: 24px; right: 24px; border-top: 1px solid var(--edge); }
 @media (max-width: 560px) { .site-foot::before { left: 20px; right: 20px; } }
 .site-foot nav { display: flex; flex-wrap: wrap; gap: 0 22px; }
 .site-foot nav a { display: inline-flex; align-items: center; min-height: 44px; }
@@ -565,43 +595,44 @@ pre .dim { color: #9FB0C8; }
 /* Docs */
 .docs { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 32px 64px; padding-block: 24px 96px; align-items: start; }
 .toc { position: sticky; top: 20px; font-size: 15.5px; display: grid; gap: 2px; }
-.toc strong { font-size: 14px; color: var(--graphite); font-weight: 600; padding-bottom: 8px; }
-.toc a { color: var(--ink); text-decoration: none; padding: 8px 10px; border-radius: 8px; }
-.toc a:hover { background: var(--desk); }
-.toc a[aria-current="page"] { background: var(--hl); font-weight: 600; }
+.toc strong { font-size: 14px; color: var(--muted); font-weight: 600; padding-bottom: 8px; }
+.toc a { color: var(--body); text-decoration: none; padding: 8px 14px; border-radius: 999px; transition: background-color .15s ease, color .15s ease; }
+.toc a:hover { background: rgba(255, 255, 255, .06); color: var(--text); }
+.toc a[aria-current="page"] { background: var(--tab-on); color: var(--text); font-weight: 600; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .14); }
 @media (max-width: 900px) {
   .docs { grid-template-columns: minmax(0, 1fr); }
-  .toc { position: static; display: flex; flex-wrap: wrap; gap: 6px; padding-bottom: 20px; border-bottom: 1px solid var(--rule); }
+  .toc { position: static; display: flex; flex-wrap: wrap; gap: 6px; padding-bottom: 20px; border-bottom: 1px solid var(--edge); }
   .toc strong { width: 100%; }
 }
 .doc { min-width: 0; }
 .doc > h1, .doc > h2, .doc > h3, .doc > p, .doc > ul, .doc > ol, .doc > pre, .doc > .callout { max-width: 46rem; }
 .doc h1 { font-size: clamp(32px, 4.6vw, 46px); margin-bottom: 18px; }
-.doc > .intro { font-size: 19px; color: var(--graphite); line-height: 1.7; }
+.doc > .intro { font-size: 19px; color: var(--muted); line-height: 1.65; }
 .doc h2 { font-size: clamp(23px, 2.8vw, 29px); margin-top: 56px; margin-bottom: 14px; scroll-margin-top: 24px; }
 .doc h3 { margin-top: 30px; margin-bottom: 8px; scroll-margin-top: 24px; }
 .doc p + p, .doc p + ul, .doc p + ol, .doc ul + p, .doc ol + p { margin-top: 14px; }
 .doc ul, .doc ol { margin: 0; padding-left: 1.3em; display: grid; gap: 8px; }
 .doc pre, .doc .table-wrap, .doc figure { margin-block: 18px; }
 .doc figure { margin-inline: 0; }
-.doc figcaption { font-size: 14.5px; color: var(--graphite); margin-top: 10px; }
-.callout { background: var(--desk); border-radius: 14px; padding: 16px 18px; font-size: 16px; margin-block: 18px; }
-.callout strong { font-weight: 600; }
-.next { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--rule); display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; font-size: 16px; }
-.shot { background: var(--desk); border: 1px solid var(--rule); border-radius: 14px; padding: 0 16px 24px; display: flex; justify-content: center; overflow: hidden; }
+.doc figcaption { font-size: 14.5px; color: var(--muted); margin-top: 10px; }
+.callout { background: var(--card); border: 1px solid var(--edge); border-radius: 20px; padding: 16px 20px; font-size: 16px; margin-block: 18px; }
+.callout strong { font-weight: 600; color: var(--text); }
+.next { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--edge); display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; font-size: 16px; }
+/* App screens sit in a lit card, so the black island stands out from the page. */
+.shot { background: radial-gradient(80% 90% at 50% 0%, rgba(var(--rim), .2), transparent 75%), var(--card); border: 1px solid var(--edge); border-radius: 20px; padding: 0 16px 24px; display: flex; justify-content: center; overflow: hidden; }
 .shot.mascots { flex-wrap: wrap; gap: 16px; padding: 24px 16px; }
 .shot.mascots img { border-radius: 20px; }
-.shot.mascots figcaption { flex-basis: 100%; text-align: center; color: var(--graphite); font-size: 14.5px; }
+.shot.mascots figcaption { flex-basis: 100%; text-align: center; color: var(--muted); font-size: 14.5px; }
 
 /* Diagrams */
-.diagram { background: var(--paper); border: 1px solid var(--rule); border-radius: 14px; padding: 12px; overflow-x: auto; }
-.diagram svg { display: block; width: 100%; min-width: 680px; height: auto; color: var(--ink); font-family: var(--font-body); }
-.diagram .zone-a { fill: var(--desk); stroke: var(--rule); }
-.diagram .zone-b { fill: #FFF8C9; stroke: #E6CF2F; }
-.diagram .box { fill: var(--paper); stroke: currentColor; stroke-width: 1.2; }
+.diagram { background: var(--card); border: 1px solid var(--edge); border-radius: 20px; padding: 12px; overflow-x: auto; }
+.diagram svg { display: block; width: 100%; min-width: 680px; height: auto; color: var(--text); font-family: var(--font-body); }
+.diagram .zone-a { fill: rgba(255, 255, 255, .03); stroke: var(--edge); }
+.diagram .zone-b { fill: rgba(var(--rim), .16); stroke: rgba(var(--rim), .7); }
+.diagram .box { fill: var(--night); stroke: rgba(255, 255, 255, .55); stroke-width: 1.2; }
 .diagram .ln { stroke: currentColor; stroke-width: 1.3; fill: none; }
-.diagram .life { stroke: var(--rule); stroke-width: 1.4; stroke-dasharray: 4 5; fill: none; }
+.diagram .life { stroke: rgba(255, 255, 255, .16); stroke-width: 1.4; stroke-dasharray: 4 5; fill: none; }
 .diagram .t { font-size: 14px; font-weight: 600; fill: currentColor; }
-.diagram .s { font-size: 12px; fill: var(--graphite); }
+.diagram .s { font-size: 12px; fill: var(--muted); }
 .diagram .l { font-size: 12px; fill: currentColor; }
-.diagram .zt { font-size: 13px; font-weight: 600; fill: var(--graphite); }
+.diagram .zt { font-size: 13px; font-weight: 600; fill: var(--muted); }

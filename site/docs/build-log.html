@@ -5,17 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Build log | StudyNotch docs</title>
 <meta name="description" content="In what order StudyNotch was built, what it drew on, and why it is the way it is.">
-<meta name="theme-color" content="#FFFFFF">
+<meta name="theme-color" content="#0B0C0E">
 <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hahmlet:wght@400;700&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
 <link rel="stylesheet" href="../assets/styles.css">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
 <header class="wrap site-head">
-  <a class="brand" href="../index.html" translate="no"><img src="../assets/img/app-icon.png" width="30" height="30" alt="">StudyNotch</a>
+  <a class="brand" href="../index.html" translate="no"><img src="../assets/img/mascot.png" width="32" height="32" alt="">StudyNotch</a>
   <nav class="site-nav" aria-label="Main menu">
     <a href="how-it-works.html">How it works</a>
     <a href="build-log.html">Build log</a>
@@ -52,6 +49,7 @@
       <li><strong>The app moved to English.</strong> Every screen, menu, error message and mascot line, and the instructions sent to the AI. Answers come back in the language the question is typed in, so a question typed in Korean gets a Korean answer. The labels match the ones this site’s demo already used, and every screen was rendered again to check that nothing longer in English was cut off.</li>
       <li><strong>The mascot became Squat.</strong> The paper drafts looked machine-made, so the mascot was redesigned from black silhouettes, through flat cut-outs, to a glossy black droplet drawn in 3D. Its white eyes are painted on its surface, change shape with the state and follow the pointer; their size and the long, tapering smile were tuned by hand. Later its drop tip and feet went, leaving a round body. The same shader draws it in the app (Metal) and on this site (WebGL), with no images and no outside library.</li>
       <li><strong>The colours were cut down.</strong> With a colour per course and per state, the screens looked scattered. Now the island is white and grey on black. Its one touch of colour is a faint light, in the state's colour, behind the cards and the mascot. Courses have no colours.</li>
+      <li><strong>The website moved into the mascot’s studio.</strong> The paper, ink and yellow highlighter looked like another product next to a glossy black mascot. Now the site is a softly lit black with white type in the Mac’s own font, round buttons, and edges caught by the same cool rim light as the mascot. A picked sentence on the demo page turns black with white text, and the app’s screens sit on the page as they are.</li>
       <li><strong>Courses can be linked to folders, and edited.</strong> A PDF could only be added after its course existed, and a course could not be changed afterwards. Now the new-course page takes a linked folder or PDFs before “Add” (and forgets them if you close it), and each course has an Edit page for its folders, PDFs, name and removal. Linked folders are read where they are and never written to.</li>
       <li><strong>A course became the AI’s project.</strong> Only one matching page used to go with a question. Chat Projects on claude.ai and chatgpt.com can’t be filled by another app, but the tools behind each AI treat a folder as a project. So each course keeps a text copy of all its PDFs, and the AI may open that folder, read-only, when the page isn’t enough. Tried for real: asked for two facts that were not on the page sent, Claude and ChatGPT both opened the files and answered with the file and page.</li>
       <li><strong>The first step became choosing the AI.</strong> Someone on another Mac had no clear way to connect an AI. Now the first launch opens at “First, connect the AI that answers you”, with a tile each for Claude, ChatGPT and Gemini that signs in, installs or downloads what is missing. An AI that is already signed in on the Mac (say, in the ChatGPT app) is never used until you press Connect, and “Auto”, which used to answer with whichever was signed in, is gone. Each tile shows the account it would use; “Another account” opens the service’s sign-in page for a sign-in kept only for StudyNotch, and “Test connection” sends one real question to prove it works. Gemini moved to Google’s Antigravity CLI, because the older <code>gemini</code> tool stopped answering personal accounts in June 2026.</li>
@@ -86,7 +84,7 @@
         <tbody>
           <tr><td><code>AppModel.swift</code></td><td>State and every action: sessions, drift cards, the question flow.</td></tr>
           <tr><td><code>IslandPanel.swift</code></td><td>The window over the notch: reading the notch size, choosing the screen, letting clicks outside the island through, and which clicks reach the island.</td></tr>
-          <tr><td><code>IslandViews.swift</code></td><td>The island’s shape, motion values, colour tokens, course highlighters and shared buttons.</td></tr>
+          <tr><td><code>IslandViews.swift</code></td><td>The island’s shape, motion values, colour tokens and shared buttons.</td></tr>
           <tr><td><code>Mascot.swift</code></td><td>The mascot in the app: its expressions, blinks, glances, the eased change between faces, a hop, and a glow in the state’s colour.</td></tr>
           <tr><td><code>MascotRenderer.swift</code></td><td>Draws the mascot in 3D with Metal: the same shader as the website’s.</td></tr>
           <tr><td><code>IslandScreens.swift</code></td><td>The island’s screens: peek, tabs and cards, course pills, record, add, drift card, summary, connection check, greeting and the closing countdown.</td></tr>
