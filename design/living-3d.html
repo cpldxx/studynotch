@@ -1,0 +1,594 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Living 3D creatures</title>
+<meta name="description" content="Eight living but not cute StudyNotch mascot candidates in CSS 3D. They breathe, blink, look at your pointer and spin when dragged.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hahmlet:wght@700&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
+<style>
+/* DESIGN.md colours only: paper, desk, ink, graphite, rule, highlighter, pen blue, and the island's state colours. */
+:root { --paper: #FFFFFF; --desk: #EDF0F3; --ink: #14233B; --graphite: #566173; --rule: #D5DBE3; --hl: #FFE94A; color-scheme: light; }
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 400 16px/1.65 "IBM Plex Sans KR", -apple-system, "Apple SD Gothic Neo", sans-serif; word-break: keep-all; -webkit-font-smoothing: antialiased; }
+.wrap { width: min(1264px, 100%); margin-inline: auto; padding-inline: 24px; }
+@media (max-width: 560px) { .wrap { padding-inline: 16px; } }
+header { padding-block: 48px 20px; display: grid; gap: 14px; }
+h1 { margin: 0; font: 700 clamp(30px, 4vw, 46px)/1.2 "Hahmlet", serif; letter-spacing: -.02em; }
+header > p { margin: 0; color: var(--graphite); max-width: 48em; }
+:focus-visible { outline: 2px solid #1F4FD8; outline-offset: 3px; border-radius: 6px; }
+.pick { display: grid; gap: 6px; padding: 20px 24px; border: 1px solid var(--ink); border-radius: 14px; }
+.pick h2 { margin: 0; font: 700 20px/1.35 "Hahmlet", serif; }
+.pick p { margin: 0; color: var(--graphite); font-size: 15px; max-width: 62em; }
+.bar { position: sticky; top: 0; z-index: 10; background: var(--paper); padding-block: 14px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; border-bottom: 1px solid var(--rule); }
+.bar span { color: var(--graphite); font-size: 14.5px; margin-right: 6px; }
+.state { min-height: 44px; padding: 0 16px; border: 1px solid var(--rule); border-radius: 10px; background: var(--paper); color: var(--ink); font: 500 15px/1 inherit; font-family: inherit; cursor: pointer; transition: background-color .15s, border-color .15s, color .15s; }
+.state[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: #fff; }
+@media (hover: hover) and (pointer: fine) { .state:hover { border-color: var(--ink); } }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 282px), 1fr)); gap: 18px; padding-block: 22px 40px; }
+.card { margin: 0; border: 1px solid var(--rule); border-radius: 16px; overflow: hidden; display: grid; grid-template-rows: auto 1fr; }
+.plate { position: relative; height: 270px; background: var(--desk); display: grid; place-items: center; overflow: hidden; --h: 150px; }
+.plate .m.big { margin-top: 44px; }
+.notch { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 236px; height: 32px; background: #000; border-radius: 0 0 12px 12px; z-index: 2;
+  display: flex; align-items: center; justify-content: space-between; color: #F5F6F8; font: 600 12px/1 -apple-system, BlinkMacSystemFont, sans-serif; font-variant-numeric: tabular-nums; }
+.ear { width: 76px; height: 32px; display: inline-flex; align-items: center; justify-content: center; }
+.card figcaption { padding: 16px 18px 20px; display: grid; gap: 8px; align-content: start; }
+.card h3 { margin: 0; font: 700 18px/1.35 "Hahmlet", serif; display: flex; gap: 10px; align-items: baseline; }
+.card h3 b { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--ink); color: #fff; font: 600 12px/1 "IBM Plex Sans KR", sans-serif; flex: none; transform: translateY(-2px); }
+.card dl { margin: 0; display: grid; grid-template-columns: 6.6em 1fr; gap: 5px 10px; font-size: 14.5px; line-height: 1.55; }
+.card dt { color: var(--graphite); }
+.card dd { margin: 0; }
+footer { padding-block: 8px 64px; color: var(--graphite); font-size: 14px; max-width: 60em; }
+
+/* ---------- The 3D engine (the same one as mascot-samples.html). 1em is the creature's size unit. */
+.m { position: relative; display: inline-block; flex: none; font-size: var(--h); line-height: 1; padding: 0; margin: 0; border: 0; background: none; color: var(--ink);
+  cursor: grab; touch-action: pan-y; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+.m.held { cursor: grabbing; }
+.m:focus-visible { outline: 2px solid #1F4FD8; outline-offset: 10px; border-radius: 14px; }
+.m .sh { position: absolute; left: 4%; right: 4%; bottom: -.06em; height: .12em; border-radius: 50%; background: radial-gradient(closest-side, rgba(20, 35, 59, .26), transparent); pointer-events: none; }
+.m .rig { position: absolute; inset: 0; perspective: 4.4em; transform-origin: 50% 100%; }
+.m .body { position: absolute; inset: 0; transform-style: preserve-3d; transform: rotateX(8deg) rotateY(-22deg); }
+.m .pl { position: absolute; left: 50%; top: 50%; display: block; backface-visibility: hidden; }
+.m .pl.two { backface-visibility: visible; }
+.m .part { position: absolute; left: 50%; top: 50%; width: 0; height: 0; transform-style: preserve-3d; }
+.m.tiny { cursor: default; pointer-events: none; }
+.m.tiny .sh { display: none; }
+@media (prefers-reduced-motion: no-preference) {
+  .m.seen:not(.tiny) .rig { animation: breathe 4.2s ease-in-out infinite; }
+  .m.hop .rig { animation: hop .62s both; }
+  .m:active:not(.held):not(.hop) .rig { animation: none; transform: scale(1.05, .93); transition: transform .1s cubic-bezier(.23, 1, .32, 1); }
+  @keyframes breathe { 50% { transform: scale(1.012, .982); } }
+  @keyframes hop {
+    0% { transform: scale(1.08, .88); animation-timing-function: cubic-bezier(.2, .8, .4, 1); }
+    36% { transform: translateY(-.22em) scale(.96, 1.06); animation-timing-function: cubic-bezier(.6, 0, .9, .4); }
+    64% { transform: translateY(0) scale(1.06, .92); animation-timing-function: ease-out; }
+    100% { transform: none; }
+  }
+}
+
+/* 1. Inchworm: colour by state. */
+.m[data-kind="worm"] { --wc: #FFE94A; }
+.m[data-kind="worm"][data-state="drift"] { --wc: #FFB25E; }
+
+/* 2. Pebble: eyes change shape and colour by state; the engine adds .blink. */
+.m .eye { background: var(--eye, #F5F6F8); border-radius: .04em; transition: scale .35s cubic-bezier(.3, 1.4, .5, 1), background-color .3s, translate .12s; }
+.m[data-state="focus"] .eye { scale: 1 .5; }
+.m[data-state="drift"] .eye { scale: 1 1.2; --eye: #FFB25E; }
+.m[data-state="sleep"] .eye { scale: 1 .12; }
+.m[data-state="think"] .eye { --eye: #F5F6F8; }
+.m.blink:not([data-state="sleep"]) .eye { transform: scaleY(.1); }
+
+/* 3. Crane: wings flap on their ridge; the neck nods. */
+.m .wf { transform-origin: 50% 0; animation: flapF 2.6s ease-in-out infinite; }
+.m .wb { transform-origin: 50% 0; animation: flapB 2.6s ease-in-out infinite; }
+@keyframes flapF { 0%, 100% { transform: rotateX(104deg); } 50% { transform: rotateX(146deg); } }
+@keyframes flapB { 0%, 100% { transform: rotateX(-104deg); } 50% { transform: rotateX(-146deg); } }
+.m[data-state="think"] .wf, .m[data-state="think"] .wb { animation-duration: .55s; }
+.m[data-state="focus"] .wf, .m[data-state="sleep"] .wf { animation: none; transform: rotateX(94deg); }
+.m[data-state="focus"] .wb, .m[data-state="sleep"] .wb { animation: none; transform: rotateX(-94deg); }
+.m[data-state="drift"] .wf { animation: none; transform: rotateX(132deg); }
+.m[data-state="drift"] .wb { animation: none; transform: rotateX(-132deg); }
+.m .neck { rotate: z -38deg; transition: rotate .5s cubic-bezier(.3, 1.4, .5, 1); }
+.m[data-state="focus"] .neck { rotate: z -14deg; }
+.m[data-state="sleep"] .neck { rotate: z -8deg; }
+.m[data-state="drift"] .neck { rotate: z -58deg; }
+.m[data-state="think"] .neck { animation: tilt 1.2s ease-in-out infinite; }
+@keyframes tilt { 50% { rotate: z -26deg; } }
+
+/* 4. Book: the cover breathes open on its spine; the eyes show only in the gap. */
+.m .lid { transform-origin: 50% 0; animation: lidRest 4.4s ease-in-out infinite; }
+.m .beyes { animation: eyesRest 4.4s ease-in-out infinite; }
+@keyframes lidRest { 0%, 100% { transform: rotateX(90deg); } 30%, 70% { transform: rotateX(108deg); } }
+@keyframes eyesRest { 0%, 14%, 86%, 100% { opacity: 0; } 30%, 70% { opacity: 1; } }
+.m[data-state="focus"] .lid { animation: none; transform: rotateX(99deg); }
+.m[data-state="focus"] .beyes { animation: none; opacity: 1; scale: 1 .55; translate: 0 .02em; }
+.m[data-state="think"] .lid { animation: lidThink .8s ease-in-out infinite; }
+.m[data-state="think"] .beyes { animation: none; opacity: 1; translate: .02em -.01em; }
+@keyframes lidThink { 0%, 100% { transform: rotateX(100deg); } 50% { transform: rotateX(116deg); } }
+.m[data-state="drift"] .lid { animation: none; transform: rotateX(126deg); }
+.m[data-state="drift"] .beyes { animation: none; opacity: 1; scale: 1 1.2; translate: -.04em -.02em; --eye: #FFB25E; }
+.m[data-state="sleep"] .lid { animation: lidSleep 5s ease-in-out infinite; }
+.m[data-state="sleep"] .beyes { animation: none; opacity: 0; }
+@keyframes lidSleep { 0%, 100% { transform: rotateX(90deg); } 50% { transform: rotateX(93deg); } }
+
+/* 5. Owl statue: bronze lids. */
+.m .lid2 { transform-origin: 50% 0; scale: 1 0; transition: scale .3s cubic-bezier(.3, 1.2, .5, 1); }
+.m[data-state="focus"] .lid2 { scale: 1 .5; }
+.m[data-state="think"] .lid2 { scale: 1 .28; }
+.m[data-state="sleep"] .lid2 { scale: 1 1; }
+.m.blink .lid2 { scale: 1 1; transition-duration: .07s; }
+.m .pupil { transition: scale .3s, translate .12s; }
+.m[data-state="drift"] .pupil { scale: 1.45; }
+.m[data-state="think"] .pupil { translate: .012em -.016em; }
+
+/* 6. Candle: the flame is the creature. */
+.m .flame { rotate: z var(--lean, 0deg); transition: rotate .4s ease-out; }
+.m .fl { transform-origin: 50% 100%; animation: flicker 1.9s ease-in-out infinite;
+  background: radial-gradient(60% 50% at 50% 72%, #fff 0 22%, var(--f1, #FFE94A) 50%, var(--f2, #FFB25E) 78%, transparent 80%); border-radius: 50% 50% 50% 50% / 62% 62% 38% 38%; }
+.m .halo { background: radial-gradient(closest-side, color-mix(in srgb, var(--f1, #FFE94A) 55%, transparent), transparent); animation: halo 1.9s ease-in-out infinite; }
+@keyframes flicker { 0%, 100% { transform: scale(1, 1) skewX(0); } 25% { transform: scale(.94, 1.06) skewX(2deg); } 50% { transform: scale(1.03, .95) skewX(-1.5deg); } 75% { transform: scale(.97, 1.04) skewX(1deg); } }
+@keyframes halo { 50% { opacity: .7; } }
+.m[data-state="focus"] .fl { animation-duration: 3.4s; scale: 1 1.25; }
+.m[data-state="think"] { --f2: #C9A6FF; }
+.m[data-state="think"] .fl, .m[data-state="think"] .halo { animation-duration: .45s; }
+.m[data-state="drift"] { --f1: #FFB25E; --f2: #FFB25E; --lean: 24deg; }
+.m[data-state="drift"] .fl { animation-duration: .7s; }
+.m[data-state="sleep"] .fl { scale: .34; opacity: .7; animation-duration: 4s; }
+.m[data-state="sleep"] .halo { opacity: .15; animation: none; }
+
+/* 7. Quill: sways like a breathing feather; dips into the ink when thinking. */
+.m .qtilt { rotate: z 14deg; transition: rotate .6s cubic-bezier(.3, 1.3, .5, 1), translate .6s; }
+.m .qsway { transform-origin: 0 0; animation: sway 4.2s ease-in-out infinite; }
+@keyframes sway { 0%, 100% { transform: rotateZ(-3deg) rotateY(-8deg); } 50% { transform: rotateZ(4deg) rotateY(10deg); } }
+.m[data-state="focus"] .qsway { animation-duration: 6s; }
+.m[data-state="think"] .qsway { animation: dip 1.1s ease-in-out infinite; }
+@keyframes dip { 0%, 100% { transform: translateY(0); } 45% { transform: translateY(.1em); } }
+.m[data-state="drift"] .qtilt { rotate: z 36deg; }
+.m[data-state="drift"] .qsway { animation: tremble .5s ease-in-out infinite; }
+@keyframes tremble { 50% { transform: rotateZ(3deg); } }
+.m[data-state="sleep"] .qtilt { rotate: z 30deg; translate: .02em 0; }
+.m[data-state="sleep"] .qsway { animation: none; }
+.m .drop { opacity: 0; }
+.m[data-state="think"] .drop { animation: drop 1.1s ease-in infinite; }
+@keyframes drop { 0%, 40% { opacity: 0; transform: translateY(0); } 50% { opacity: 1; } 100% { opacity: 0; transform: translateY(.22em); } }
+
+/* 8. Metronome: its arm is a heartbeat. */
+.m .arm { transform-origin: 50% 100%; animation: tick 1.1s ease-in-out infinite alternate; }
+@keyframes tick { from { transform: rotateZ(-22deg); } to { transform: rotateZ(22deg); } }
+.m[data-state="focus"] .arm { animation-duration: 1s; }
+.m[data-state="think"] .arm { animation-duration: .32s; }
+.m[data-state="drift"] .arm { animation: wobble 1.6s ease-in-out infinite; }
+@keyframes wobble { 0%, 100% { transform: rotateZ(-22deg); } 30% { transform: rotateZ(10deg); } 45% { transform: rotateZ(-6deg); } 70% { transform: rotateZ(24deg); } }
+.m[data-state="sleep"] .arm { animation: none; transform: rotateZ(0); }
+
+@media (prefers-reduced-motion: reduce) { .m * { animation: none !important; } }
+
+/* Inside the gallery (index.html), the sheet shows only its candidates. */
+.embed body > header, .embed .bar, .embed body > footer { display: none; }
+.embed .grid { padding-block: 4px 8px; }
+.embed .wrap { padding-inline: 0; }
+</style>
+</head>
+<body>
+<header class="wrap">
+  <h1>Living 3D creatures, not cute ones</h1>
+  <p>All built in CSS 3D. They live through gesture rather than cuteness: each turns toward your pointer, leans in when you come close, looks around on its own when you stop moving, hops when pressed and spins when dragged. Faces stop at two eyes, and some, like the candle and the quill, have no face at all. The notch above each card shows it at real size.</p>
+  <div class="pick">
+    <h2>Pick: ⑥ Candle, then ① Inchworm</h2>
+    <p>The candle has no face at all and is still the most alive: the longer you focus, the taller and stiller the flame; on a break only an ember is left. It reads well even at 20px. The inchworm is the highlighter line come alive, segment by segment, but the research warns that a creature invites eyes, and eyes put it in a crowded genre of notch pets, so it should keep its single dot.</p>
+  </div>
+</header>
+<div class="bar wrap" role="group" aria-label="Change the state">
+  <span>All at once:</span>
+  <button type="button" class="state" aria-pressed="true" data-state="rest">Rest</button>
+  <button type="button" class="state" aria-pressed="false" data-state="focus">Focus</button>
+  <button type="button" class="state" aria-pressed="false" data-state="think">Answering</button>
+  <button type="button" class="state" aria-pressed="false" data-state="drift">Drift</button>
+  <button type="button" class="state" aria-pressed="false" data-state="sleep">Break</button>
+</div>
+<main class="wrap grid" id="grid"></main>
+<footer class="wrap">Drafts. Whichever direction is chosen gets checked against similar characters and trademarks before it goes into the app or the site. The motion only shows when this file is open.</footer>
+
+<script>
+(function () {
+  'use strict';
+  var INK = '#14233B', PEN = '#1F4FD8', HL = '#FFE94A', PAPER = '#FFFFFF', RULE = '#D5DBE3', GRAPHITE = '#566173';
+  var still = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  // ---------- Building blocks: sizes in em; x right, y down, z toward the viewer; 0 is the centre.
+  function E(v) { return (Math.round(v * 10000) / 10000) + 'em'; }
+  function T(x, y, z) { return 'translate3d(' + E(x || 0) + ',' + E(y || 0) + ',' + E(z || 0) + ') '; }
+  function mix(c, p) {
+    if (!p) return c;
+    return p > 0 ? 'color-mix(in srgb,' + c + ' ' + (100 - p) + '%,' + INK + ')' : 'color-mix(in srgb,' + c + ' ' + (100 + p) + '%,#fff)';
+  }
+  function P(o) {
+    var mt = o.mt != null ? o.mt : -o.h / 2, ml = o.ml != null ? o.ml : -o.w / 2;
+    return '<i class="pl' + (o.cls ? ' ' + o.cls : '') + '" style="width:' + E(o.w) + ';height:' + E(o.h) + ';margin:' + E(mt) + ' 0 0 ' + E(ml) + ';' +
+      (o.t ? 'transform:' + o.t + ';' : '') + (o.bg ? 'background:' + o.bg + ';' : '') + (o.css || '') + '">' + (o.html || '') + '</i>';
+  }
+  function part(cls, t, html) { return '<b class="part' + (cls ? ' ' + cls : '') + '"' + (t ? ' style="transform:' + t + '"' : '') + '>' + html + '</b>'; }
+  var SHADE = { front: 0, back: 24, right: 16, left: 7, top: -10, bottom: 30 };
+  function box(o) {
+    var t = T(o.x, o.y, o.z), w = o.w, h = o.h, d = o.d, f = o.f || {}, out = '';
+    var sides = {
+      front: [w, h, 'translateZ(' + E(d / 2) + ')'], back: [w, h, 'rotateY(180deg) translateZ(' + E(d / 2) + ')'],
+      right: [d, h, 'rotateY(90deg) translateZ(' + E(w / 2) + ')'], left: [d, h, 'rotateY(-90deg) translateZ(' + E(w / 2) + ')'],
+      top: [w, d, 'rotateX(90deg) translateZ(' + E(h / 2) + ')'], bottom: [w, d, 'rotateX(-90deg) translateZ(' + E(h / 2) + ')']
+    };
+    Object.keys(sides).forEach(function (k) {
+      if (o.skip && o.skip.indexOf(k) >= 0) return;
+      var s = sides[k], fd = f[k] || {};
+      out += P({ w: s[0], h: s[1], t: t + s[2], bg: fd.bg || mix(o.c, SHADE[k]), css: (o.r ? 'border-radius:' + E(o.r) + ';' : '') + (fd.css || ''), html: fd.html });
+    });
+    return out;
+  }
+  function shadeAt(deg) { var r = deg * Math.PI / 180; return Math.round(12 * (1 - Math.cos(r)) + 8 * Math.max(0, Math.sin(r))); }
+  function prism(o) {
+    var n = o.n, s = 2 * o.a * Math.tan(Math.PI / n), R = o.a / Math.cos(Math.PI / n), t = T(o.x, o.y, o.z), out = '';
+    for (var i = 0; i < n; i++) {
+      var ang = i * 360 / n;
+      out += P({ w: s + .003, h: o.h, t: t + 'rotateY(' + ang + 'deg) translateZ(' + E(o.a) + ')', bg: o.bg ? o.bg(shadeAt(ang)) : mix(o.c, shadeAt(ang)) });
+    }
+    var top = [], bottom = [];
+    for (var k = 0; k < n; k++) {
+      var th = (k + .5) * 2 * Math.PI / n;
+      top.push((50 + 50 * Math.sin(th)).toFixed(2) + '% ' + (50 + 50 * Math.cos(th)).toFixed(2) + '%');
+      bottom.push((50 + 50 * Math.sin(th)).toFixed(2) + '% ' + (50 - 50 * Math.cos(th)).toFixed(2) + '%');
+    }
+    out += P({ w: 2 * R, h: 2 * R, t: t + 'rotateX(90deg) translateZ(' + E(o.h / 2) + ')', bg: o.top || mix(o.c, -10), css: 'clip-path:polygon(' + top.join(',') + ')' });
+    out += P({ w: 2 * R, h: 2 * R, t: t + 'rotateX(-90deg) translateZ(' + E(o.h / 2) + ')', bg: mix(o.c, 30), css: 'clip-path:polygon(' + bottom.join(',') + ')' });
+    return out;
+  }
+  function cone(o) {
+    var n = o.n, s = 2 * o.a * Math.tan(Math.PI / n), L = Math.sqrt(o.len * o.len + o.a * o.a);
+    var tilt = Math.atan(o.a / o.len) * 180 / Math.PI, t = T(o.x, o.y, o.z), out = '';
+    for (var i = 0; i < n; i++) {
+      var ang = i * 360 / n + (o.rot || 0);
+      out += P({ w: s + .003, h: L, mt: -L, t: t + 'rotateY(' + ang + 'deg) translateZ(' + E(o.a) + ') rotateX(' + tilt.toFixed(3) + 'deg)',
+        bg: mix(o.c, shadeAt(ang)), css: 'transform-origin:50% 100%;clip-path:polygon(50% 0,100% 100%,0 100%)' });
+    }
+    return out;
+  }
+  // A ball of paper discs; `c` may be a CSS variable so its colour can change with the state.
+  function ball(o) {
+    var k = o.k || 5, out = '';
+    for (var i = 0; i < k; i++) {
+      var u = -1 + (2 * i + 1) / k, rr = o.r * Math.sqrt(1 - u * u);
+      out += P({ cls: 'two', w: 2 * rr, h: 2 * rr, t: 'translateZ(' + E(u * o.r) + ')', bg: mix(o.c, u > 0 ? -Math.round(u * 10) : Math.round(-u * 22)), css: 'border-radius:50%' });
+    }
+    out += P({ cls: 'two', w: 2 * o.r * .96, h: 2 * o.r * .96, t: 'rotateY(90deg)', bg: mix(o.c, 10), css: 'border-radius:50%' });
+    return out;
+  }
+  // A frustum (a pyramid with its top cut off): bottom w x d, top wt x dt, height h, bottom at y.
+  function frustum(o) {
+    var out = '', H = o.h;
+    function face(Wb, Wt, half, halfTop, rotY, shade) {
+      var lean = half - halfTop, L = Math.sqrt(H * H + lean * lean), tilt = Math.atan(lean / H) * 180 / Math.PI, cut = ((Wb - Wt) / 2 / Wb * 100).toFixed(2);
+      return P({ w: Wb, h: L, mt: -L, t: T(o.x, o.y, o.z) + 'rotateY(' + rotY + 'deg) translateZ(' + E(half) + ') rotateX(' + tilt.toFixed(3) + 'deg)',
+        bg: o.bgFace ? o.bgFace(rotY, shade) : mix(o.c, shade), css: 'transform-origin:50% 100%;clip-path:polygon(' + cut + '% 0,' + (100 - cut) + '% 0,100% 100%,0 100%)', html: rotY === 0 && o.front ? o.front : '' });
+    }
+    out += face(o.w, o.wt, o.d / 2, o.dt / 2, 0, 0) + face(o.w, o.wt, o.d / 2, o.dt / 2, 180, 24) + face(o.d, o.dt, o.w / 2, o.wt / 2, 90, 16) + face(o.d, o.dt, o.w / 2, o.wt / 2, -90, 7);
+    out += P({ w: o.wt, h: o.dt, t: T(o.x, o.y - H, o.z) + 'rotateX(90deg)', bg: mix(o.c, -10) });
+    return out;
+  }
+
+  // ---------- The candidates.
+  var KINDS = [
+    { id: 'worm', name: 'Inchworm', w: 1.0, h: .66, segs: 9,
+      life: 'Nine highlighter segments arch and stretch like an inchworm, with a single eye at the head.',
+      states: 'In focus it lies flat and only its segments breathe; answering, it arches quickly back and forth; drifting, it rears up, looks around and turns amber; on a break it curls into a ring.',
+      fit: 'The product’s line and life in one body; it stays “a line” even when spun in 3D.',
+      build: function () {
+        var out = '';
+        for (var i = 0; i < this.segs; i++) {
+          var head = i === this.segs - 1, r = head ? .085 : .068;
+          out += '<b class="part seg">' + ball({ r: r, c: 'var(--wc)', k: head ? 6 : 5 }) +
+            (head ? P({ w: .034, h: .034, t: T(.034, -.022, r + .004), bg: INK, css: 'border-radius:50%' }) : '') + '</b>';
+        }
+        return out;
+      },
+      tick: function (m, t, dt) {
+        var n = this.segs, s = m.state, pts = [];
+        for (var i = 0; i < n; i++) {
+          var u = i / (n - 1), x, y;
+          if (s === 'sleep') {
+            var a = (205 - u * 300) * Math.PI / 180;
+            x = .2 * Math.cos(a); y = .08 + .2 * Math.sin(a) * -1;
+            x *= 1 + .02 * Math.sin(t * 1.3);
+          } else if (s === 'drift') {
+            var k = Math.max(0, (u - .45) / .55);
+            x = -.36 + Math.min(u, .45) / .45 * .36 + k * .1 + .07 * k * Math.sin(t * 2.3);
+            y = .2 - .42 * k * (1 - .2 * k);
+          } else if (s === 'focus') {
+            x = -.4 + .8 * u; y = .2 + .008 * Math.sin(t * 1.6 - u * 6);
+          } else {
+            var per = s === 'think' ? .9 : 2.8, ph = (t % per) / per, A = .2 * Math.pow(Math.sin(Math.PI * ph), 2), L = .8 - 1.25 * A;
+            x = -L / 2 + L * u + (s === 'think' ? .08 * Math.sin(t * Math.PI * 2 / 1.8) : 0);
+            y = .2 - A * Math.sin(Math.PI * u);
+          }
+          pts.push([x, y]);
+        }
+        if (!m.cur) m.cur = pts.map(function (p) { return p.slice(); });
+        var kk = still.matches ? 1 : 1 - Math.exp(-dt * 12);
+        m.segs = m.segs || m.el.querySelectorAll('.seg');
+        for (var j = 0; j < n; j++) {
+          m.cur[j][0] += (pts[j][0] - m.cur[j][0]) * kk; m.cur[j][1] += (pts[j][1] - m.cur[j][1]) * kk;
+          m.segs[j].style.transform = 'translate3d(' + E(m.cur[j][0]) + ',' + E(m.cur[j][1]) + ',0)';
+        }
+        return !still.matches;
+      } },
+    { id: 'pebble', name: 'Black pebble', w: .92, h: .56,
+      life: 'The notch island as an object you could hold: a smooth black stone with two white eyes that blink and watch your pointer.',
+      states: 'In focus the eyes narrow; drifting, they widen and turn amber; on a break they close. It swells very slightly as it breathes.',
+      fit: 'The most Apple-like object. Being notch-black, only its eyes show inside the notch, and eyes in the notch are already common.',
+      build: function () {
+        var out = '', k = 9;
+        for (var i = 0; i < k; i++) {
+          var u = -1 + (2 * i + 1) / k, f = Math.sqrt(1 - u * u * .92);
+          out += P({ cls: 'two', w: .86 * f, h: .44 * f, t: 'translateZ(' + E(u * .17) + ')', bg: u > .5 ? '#000' : mix('#2A2F37', Math.round(30 - Math.abs(u) * 20)), css: 'border-radius:999px' });
+        }
+        out += P({ w: .5, h: .14, t: T(-.12, -.11, .175), bg: 'radial-gradient(closest-side,rgba(255,255,255,.22),transparent)', css: 'border-radius:999px' });
+        [-.1, .1].forEach(function (x) { out += part('', T(x, 0, .178), P({ cls: 'eye lk', w: .07, h: .13 })); });
+        return out;
+      } },
+    { id: 'crane', name: 'Paper crane', w: 1.0, h: .8,
+      life: 'A crane folded from one sheet of notebook paper. Its wings fold and open along the ridge, and its neck nods.',
+      states: 'In focus it folds its wings and bows its head; answering, it flaps fast and tilts its head; drifting, it lifts its wings and its head; on a break it rests with wings folded, only breathing.',
+      fit: 'Continues our paper material and is the most grown-up. The 3D wingbeat is the most beautiful motion here.',
+      build: function () {
+        var paper = function (p) { return 'linear-gradient(to bottom,' + mix(PAPER, p) + ',' + mix(PAPER, p + 16) + ')'; };
+        var keel = P({ cls: 'two', w: .44, h: .17, mt: 0, bg: paper(14), css: 'transform-origin:50% 0;clip-path:polygon(0 0,100% 0,50% 100%)', t: 'rotateX(28deg)' }) +
+          P({ cls: 'two', w: .44, h: .17, mt: 0, bg: paper(24), css: 'transform-origin:50% 0;clip-path:polygon(0 0,100% 0,50% 100%)', t: 'rotateX(-28deg)' });
+        var wings = P({ cls: 'two wf', w: .6, h: .6, mt: 0, bg: paper(4), css: 'clip-path:polygon(0 0,100% 0,62% 100%)' }) +
+          P({ cls: 'two wb', w: .6, h: .6, mt: 0, bg: paper(20), css: 'clip-path:polygon(0 0,100% 0,62% 100%)' });
+        var head = part('', T(0, -.42, 0), P({ cls: 'two', w: .13, h: .055, ml: -.13, bg: INK, css: 'clip-path:polygon(0 50%,100% 0,100% 100%)', t: 'rotateZ(-30deg)' }));
+        var neck = part('', T(-.22, .02, 0), '<b class="part neck">' + P({ cls: 'two', w: .075, h: .42, mt: -.42, bg: paper(12), css: 'clip-path:polygon(50% 0,100% 100%,0 100%)' }) + head + '</b>');
+        var tail = part('', T(.22, .02, 0), P({ cls: 'two', w: .075, h: .38, mt: -.38, bg: paper(14), css: 'transform-origin:50% 100%;clip-path:polygon(50% 0,100% 100%,0 100%)', t: 'rotateZ(40deg)' }));
+        return part('', T(0, .02, 0), keel + wings) + neck + tail + P({ w: .4, h: .022, t: T(0, .3, 0) + 'rotateX(90deg)', bg: HL, css: 'border-radius:.01em' });
+      } },
+    { id: 'book', name: 'Breathing book', w: 1.0, h: .62,
+      life: 'A hardcover lying flat. Its cover lifts and settles like breathing, and white eyes peek out of the gap.',
+      states: 'In focus it keeps the cover slightly open and reads; answering, the cover flutters; drifting, it opens wide and looks aside; on a break it stays shut and only the cover rises and falls.',
+      fit: 'Fits the “tool beside your textbook” story best. In the notch it is just a book.',
+      build: function () {
+        var lines = 'repeating-linear-gradient(to bottom,' + PAPER + ' 0 .013em,' + mix(PAPER, 13) + ' .013em .018em)';
+        return box({ y: .2, w: .92, h: .03, d: .64, c: INK }) +
+          box({ y: .125, w: .88, h: .12, d: .6, c: PAPER, f: { front: { bg: lines }, right: { bg: lines }, left: { bg: lines } }, skip: ['back', 'bottom'] }) +
+          P({ w: .92, h: .155, t: T(0, .12, -.32) + 'rotateY(180deg)', bg: INK }) +
+          part('', T(.0, .045, .2), '<b class="part beyes">' + part('', T(-.07, -.035, 0), P({ cls: 'eye lk', w: .055, h: .085 })) + part('', T(.07, -.035, 0), P({ cls: 'eye lk', w: .055, h: .085 })) + '</b>') +
+          part('', T(0, .06, -.32), P({ cls: 'two lid', w: .92, h: .64, mt: 0, bg: INK, css: 'border-radius:0 0 .02em .02em' })) +
+          P({ w: .045, h: .13, t: T(.26, .26, .3), bg: HL, css: 'clip-path:polygon(0 0,100% 0,100% 100%,50% 80%,0 100%)' });
+      } },
+    { id: 'owl', name: 'Owl statue', w: .7, h: 1.0,
+      life: 'The bronze owl at a library entrance, alive: it blinks slowly with heavy lids and its pupils follow your pointer.',
+      states: 'In focus the lids come halfway down; answering, it narrows its eyes and looks up; drifting, its pupils widen; on a break it closes its eyes.',
+      fit: 'The most academic, and a statue is never cute. Study apps already have a famous owl, so take care.',
+      build: function () {
+        var bronze = GRAPHITE, out = '';
+        out += box({ y: .45, w: .6, h: .09, d: .46, c: RULE, f: { front: { bg: 'linear-gradient(' + RULE + ',' + RULE + ') ,' + RULE, html: '<span style="position:absolute;left:30%;right:30%;top:42%;height:16%;background:' + HL + '"></span>' } } });
+        out += prism({ y: .19, n: 6, a: .2, h: .43, c: bronze });
+        out += box({ y: -.17, w: .5, h: .3, d: .36, c: mix(bronze, -6), r: .02 });
+        out += cone({ x: -.17, y: -.31, n: 4, a: .05, len: .13, c: bronze, rot: 45 }) + cone({ x: .17, y: -.31, n: 4, a: .05, len: .13, c: bronze, rot: 45 });
+        [-.115, .115].forEach(function (x) {
+          out += part('', T(x, -.17, .182), P({ w: .15, h: .15, bg: PAPER, css: 'border-radius:50%;box-shadow:inset 0 0 0 .012em ' + mix(bronze, 20) }) +
+            part('', 'translateZ(.003em)', P({ cls: 'pupil lk', w: .065, h: .065, bg: INK, css: 'border-radius:50%' })) +
+            part('', T(0, -.075, .006), P({ cls: 'lid2', w: .16, h: .155, mt: 0, bg: mix(bronze, -6), css: 'border-radius:50% 50% 50% 50%/40% 40% 60% 60%' })));
+        });
+        out += P({ w: .06, h: .07, t: T(0, -.075, .183), bg: HL, css: 'clip-path:polygon(0 0,100% 0,50% 100%)' });
+        return out;
+      } },
+    { id: 'candle', name: 'Candle', w: .5, h: 1.0,
+      life: 'No face. The flame sways like breathing and the candle turns toward your pointer.',
+      states: 'The longer you focus, the taller and calmer the flame; answering, its tip dances fast in violet; drifting, it leans and trembles amber; on a break only a small ember is left.',
+      fit: 'The most alive without any face, with the mood of studying at night and an academic air.',
+      build: function () {
+        var flame = part('flame', '', P({ cls: 'halo', w: .36, h: .36, mt: -.3, t: '', css: 'border-radius:50%' }) +
+          P({ cls: 'fl two', w: .1, h: .2, mt: -.2 }) + P({ cls: 'fl two', w: .1, h: .2, mt: -.2, t: 'rotateY(90deg)' }));
+        return prism({ y: .455, n: 16, a: .22, h: .035, c: INK }) + prism({ y: .41, n: 16, a: .13, h: .06, c: INK }) +
+          prism({ y: .17, n: 14, a: .1, h: .42, c: PAPER }) +
+          P({ cls: 'two', w: .012, h: .05, t: T(0, -.065, 0), bg: INK }) +
+          part('', T(0, -.085, 0), flame);
+      } },
+    { id: 'quill', name: 'Quill and inkwell', w: .66, h: 1.0,
+      life: 'A quill standing in an inkwell sways like breathing. No face; it lives through the feather’s gestures.',
+      states: 'In focus it barely moves; answering, it dips into the ink and lets a highlighter drop fall; drifting, it leans out and trembles; on a break it rests against the rim.',
+      fit: 'The strongest study-and-library feel. Its motion is delicate and hard to see at very small sizes.',
+      build: function () {
+        var vane = P({ cls: 'two', w: .2, h: .62, mt: -.86, ml: -.06, bg: 'linear-gradient(to right,' + PAPER + ',' + mix(PAPER, 10) + ')', css: 'clip-path:polygon(30% 100%,10% 70%,0 40%,12% 12%,40% 0,62% 6%,80% 30%,72% 62%,48% 100%)' }) +
+          P({ cls: 'two', w: .012, h: .84, mt: -.84, ml: -.006, bg: mix(PAPER, 26) });
+        var quill = part('', T(0, .14, 0), '<b class="part qtilt"><b class="part qsway">' + vane + '</b></b>');
+        return box({ y: .33, w: .4, h: .26, d: .4, c: INK, r: .025 }) + box({ y: .17, w: .2, h: .06, d: .2, c: INK }) +
+          P({ w: .16, h: .16, t: T(0, .139, 0) + 'rotateX(90deg)', bg: '#000', css: 'border-radius:50%' }) + quill +
+          part('', T(.0, .36, .21), P({ cls: 'drop', w: .035, h: .045, bg: HL, css: 'border-radius:50% 50% 50% 50%/60% 60% 40% 40%' }));
+      } },
+    { id: 'metro', name: 'Metronome', w: .7, h: 1.0,
+      life: 'The heart that keeps session time: its arm swings steadily and sets the rhythm of study.',
+      states: 'In focus slow and even; answering, fast; drifting, out of rhythm; on a break it stops.',
+      fit: 'Tied directly to the timer, though closer to a living object than a creature.',
+      build: function () {
+        var scale = '<span style="position:absolute;left:44%;right:44%;top:18%;bottom:30%;background:repeating-linear-gradient(to bottom,' + HL + ' 0 .012em,transparent .012em .05em)"></span>';
+        var arm = part('', T(0, .3, .165), '<b class="part arm">' + P({ cls: 'two', w: .016, h: .62, mt: -.62, bg: RULE }) +
+          part('', T(0, -.36, .004), P({ cls: 'two', w: .085, h: .07, bg: HL, css: 'clip-path:polygon(20% 0,80% 0,100% 100%,0 100%)' })) + '</b>');
+        return box({ y: .465, w: .64, h: .05, d: .4, c: INK }) +
+          frustum({ y: .44, w: .56, wt: .18, d: .32, dt: .12, h: .78, c: INK, front: scale }) + arm;
+      } }
+  ];
+
+  // ---------- One frame loop for every creature.
+  var jobs = [], raf = 0, last = 0, pointer = null, clock = 0;
+  function frame(now) {
+    var dt = Math.min(.034, Math.max(.001, (now - last) / 1000));
+    last = now; raf = 0; clock += dt;
+    var busy = false;
+    for (var i = 0; i < jobs.length; i++) if (jobs[i](dt)) busy = true;
+    if (busy) raf = requestAnimationFrame(frame);
+  }
+  function wake() { if (raf || document.hidden) return; last = performance.now() - 16; raf = requestAnimationFrame(frame); }
+  window.addEventListener('pointermove', function (e) { pointer = { x: e.clientX, y: e.clientY }; lastMove = performance.now(); wake(); }, { passive: true });
+  document.documentElement.addEventListener('pointerleave', function () { pointer = null; wake(); });
+  window.addEventListener('scroll', wake, { passive: true });
+  document.addEventListener('visibilitychange', wake);
+
+  // Life: when you stop moving, it looks around on its own (each at its own pace); when you come close, it leans in.
+  var lastMove = 0;
+  function life(m, resting) {
+    var idle = !pointer || performance.now() - lastMove > 2600, out = { follow: !idle && !m.tiny, near: 0, wx: 0, wy: 0, ex: 0, ey: 0 };
+    if (still.matches || resting) { out.follow = false; return out; }
+    if (!out.follow) {
+      var w = clock + m.seed;
+      out.wy = 17 * Math.sin(w * .33) + 6 * Math.sin(w * .91 + 1.3);
+      out.wx = 6 * Math.sin(w * .47 + .7);
+      out.ex = .7 * Math.sin(w * .33) + .25 * Math.sin(w * 1.7);
+      out.ey = .35 * Math.sin(w * .52 + 2);
+    } else {
+      var r = m.el.getBoundingClientRect(), d = Math.hypot(pointer.x - (r.left + r.width / 2), pointer.y - (r.top + r.height / 2));
+      out.near = clamp(1 - d / 320, 0, 1);
+    }
+    return out;
+  }
+  function spring(s, to, dt) {
+    s.v += ((to - s.x) * 110 - s.v * 13) * dt; s.x += s.v * dt;
+    if (Math.abs(to - s.x) < .06 && Math.abs(s.v) < .5) { s.x = to; s.v = 0; return false; }
+    return true;
+  }
+  function clamp(v, lo, hi) { return v < lo ? lo : v > hi ? hi : v; }
+
+  function Creature(el, kind, tiny) {
+    var self = this;
+    this.el = el; this.kind = kind; this.state = 'rest'; this.seen = true; this.tiny = tiny;
+    this.pose = { x: 8, y: -22 }; this.spin = { x: 0, v: 0 }; this.spinTo = 0; this.drag = null; this.seed = Math.random() * 100;
+    el.innerHTML = '<span class="sh"></span><span class="rig"><span class="body">' + kind.build() + '</span></span>';
+    el.style.width = E(kind.w); el.style.height = E(kind.h);
+    el.setAttribute('data-kind', kind.id); el.setAttribute('data-state', 'rest');
+    this.body = el.querySelector('.body');
+    this.looks = el.querySelectorAll('.lk');
+    jobs.push(function (dt) { return self.step(dt); });
+    new IntersectionObserver(function (en) { self.seen = en[0].isIntersecting; el.classList.toggle('seen', self.seen); if (self.seen) { wake(); self.blinkSoon(); } }).observe(el);
+    if (tiny) return;
+    el.addEventListener('pointerdown', function (e) {
+      if (e.button) return;
+      self.drag = { id: e.pointerId, x: e.clientX, t: e.timeStamp, moved: 0, v: 0, held: false };
+      try { el.setPointerCapture(e.pointerId); } catch (err) { /* already gone */ }
+    });
+    el.addEventListener('pointermove', function (e) {
+      var d = self.drag;
+      if (!d || e.pointerId !== d.id || still.matches) return;
+      if (e.pointerType === 'mouse' && !(e.buttons & 1)) { release(e); return; }
+      var dx = e.clientX - d.x, dtt = Math.max(1, e.timeStamp - d.t);
+      d.moved += Math.abs(dx);
+      if (!d.held && d.moved > 6) { d.held = true; el.classList.add('held'); }
+      if (d.held) { self.spin.x += dx * .9; self.spin.v = 0; d.v = d.v * .6 + (dx * .9 / dtt * 1000) * .4; wake(); }
+      d.x = e.clientX; d.t = e.timeStamp;
+    });
+    function release(e) {
+      var d = self.drag;
+      if (!d || (e && e.pointerId !== d.id)) return;
+      self.drag = null; el.classList.remove('held');
+      if (!d.held) return;
+      self.dragged = true; setTimeout(function () { self.dragged = false; }, 80);
+      var v = clamp(d.v, -1400, 1400);
+      self.spin.v = v; self.spinTo = Math.round((self.spin.x + v * .3) / 360) * 360; wake();
+    }
+    el.addEventListener('pointerup', release);
+    el.addEventListener('pointercancel', release);
+    el.addEventListener('click', function (e) {
+      if (self.dragged) { e.preventDefault(); return; }
+      if (still.matches) return;
+      el.classList.add('hop');
+      if (self.spinTo - self.spin.x < 180) self.spinTo += 360;
+      wake();
+    });
+    el.addEventListener('animationend', function (e) { if (e.animationName === 'hop') el.classList.remove('hop'); });
+  }
+  Creature.prototype.setState = function (s) { this.state = s; this.el.setAttribute('data-state', s); wake(); };
+  Creature.prototype.blinkSoon = function () {
+    var self = this;
+    clearTimeout(this.blinkTimer);
+    if (still.matches) return;
+    this.blinkTimer = setTimeout(function () {
+      if (!self.seen || document.hidden) return;
+      self.el.classList.add('blink');
+      setTimeout(function () { self.el.classList.remove('blink'); }, 140);
+      self.blinkSoon();
+    }, 3000 + Math.random() * 3200);
+  };
+  Creature.prototype.step = function (dt) {
+    if (!this.seen) return false;
+    var busy = false, p = this.pose, held = this.drag && this.drag.held, tx = 8, ty = -22, ex = 0, ey = 0;
+    var L = life(this, held || this.state === 'sleep');
+    if (!L.follow) {
+      ty += L.wy; tx += L.wx; ex = L.ex; ey = L.ey;
+      if (this.kind.id === 'candle' && this.state !== 'drift') this.el.style.setProperty('--lean', (-L.ex * 8).toFixed(1) + 'deg');
+      if (!still.matches && !held && this.state !== 'sleep') busy = true;
+    }
+    if (L.follow && !held && this.state !== 'sleep') {
+      var r = this.el.getBoundingClientRect(), reach = Math.max(240, r.height * 2.2);
+      var nx = clamp((pointer.x - (r.left + r.width / 2)) / reach, -1, 1), ny = clamp((pointer.y - (r.top + r.height / 2)) / reach, -1, 1);
+      ty = -10 + nx * 30; tx = 6 - ny * 18; ex = nx; ey = ny;
+      if (this.kind.id === 'candle') this.el.style.setProperty('--lean', this.state === 'drift' ? '24deg' : (-nx * 10).toFixed(1) + 'deg');
+    }
+    p.s = p.s || 1;
+    if (still.matches) { p.x = tx; p.y = ty; p.s = 1; this.spin.x = this.spinTo = 0; }
+    else {
+      var k = 1 - Math.exp(-dt * 8);
+      p.x += (tx - p.x) * k; p.y += (ty - p.y) * k; p.s += ((1 + .07 * L.near) - p.s) * k;
+      if (Math.abs(tx - p.x) + Math.abs(ty - p.y) > .08) busy = true;
+      if (!held && spring(this.spin, this.spinTo, dt)) busy = true;
+      if (!busy && !held && this.spin.x !== 0) this.spin.x = this.spinTo = 0;
+    }
+    this.body.style.transform = 'scale(' + p.s.toFixed(3) + ') rotateX(' + p.x.toFixed(2) + 'deg) rotateY(' + (p.y + this.spin.x).toFixed(2) + 'deg)';
+    var move = (ex * .016).toFixed(4) + 'em ' + (ey * .012).toFixed(4) + 'em';
+    Array.prototype.forEach.call(this.looks, function (g) { g.style.translate = move; });
+    if (this.kind.tick && this.kind.tick(this, clock, dt)) busy = true;
+    return busy;
+  };
+
+  // ---------- The page.
+  var grid = document.getElementById('grid'), all = [];
+  var RING = '<svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><circle cx="6" cy="6" r="5" fill="none" stroke="rgba(255,255,255,.18)" stroke-width="2"/><circle cx="6" cy="6" r="5" fill="none" stroke="#FFE94A" stroke-width="2" stroke-linecap="round" stroke-dasharray="11.3 31.4" transform="rotate(-90 6 6)"/></svg>';
+  KINDS.forEach(function (kind, i) {
+    var fig = document.createElement('figure');
+    fig.className = 'card';
+    fig.innerHTML = '<div class="plate"><div class="notch" aria-hidden="true"><span class="ear"><span class="m tiny"></span></span><span class="ear" style="gap:5px">' + RING + '33m</span></div>' +
+      '<button type="button" class="m big" aria-label="Candidate ' + (i + 1) + ', ' + kind.name + '. Press it to make it hop; drag it to spin it."></button></div>' +
+      '<figcaption><h3><b>' + (i + 1) + '</b>' + kind.name + '</h3><dl><dt>How it lives</dt><dd>' + kind.life + '</dd><dt>States</dt><dd>' + kind.states + '</dd><dt>Fit</dt><dd>' + kind.fit + '</dd></dl></figcaption>';
+    grid.appendChild(fig);
+    var tinyEl = fig.querySelector('.m.tiny');
+    tinyEl.style.fontSize = Math.min(22 / kind.h, 30 / kind.w).toFixed(2) + 'px';
+    all.push(new Creature(fig.querySelector('.m.big'), kind, false));
+    all.push(new Creature(tinyEl, kind, true));
+  });
+  wake();
+  var buttons = Array.prototype.slice.call(document.querySelectorAll('.state'));
+  buttons.forEach(function (b) {
+    b.addEventListener('click', function () {
+      buttons.forEach(function (o) { o.setAttribute('aria-pressed', o === b ? 'true' : 'false'); });
+      all.forEach(function (c) { c.setState(b.getAttribute('data-state')); });
+    });
+  });
+})();
+</script>
+<script>
+/* When this sheet sits inside the gallery (opened as file#embed): hide its own header and state bar, tell the gallery
+   its height, and take state changes from the gallery's one state bar. */
+(function () {
+  if (location.hash !== '#embed') return;
+  document.documentElement.classList.add('embed');
+  function send() { parent.postMessage({ sheetHeight: document.documentElement.scrollHeight }, '*'); }
+  window.addEventListener('load', send);
+  window.addEventListener('resize', send);
+  if ('ResizeObserver' in window) new ResizeObserver(send).observe(document.body);
+  window.addEventListener('message', function (e) {
+    var s = e.data && e.data.state;
+    if (!s) return;
+    var names = s === 'think' ? ['think', 'thinking'] : [s], button = null;
+    names.some(function (n) { button = document.querySelector('.state[data-state="' + n + '"], .mood[data-mood="' + n + '"]'); return !!button; });
+    if (button) button.click();
+  });
+})();
+</script>
+</body>
+</html>

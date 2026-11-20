@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How it works | StudyNotch docs</title>
+<meta name="description" content="StudyNotch’s structure, the path of one question, how drifting is judged and where your data lives.">
+<meta name="theme-color" content="#FFFFFF">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hahmlet:wght@400;700&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="wrap site-head">
+  <a class="brand" href="../index.html" translate="no"><img src="../assets/img/app-icon.png" width="30" height="30" alt="">StudyNotch</a>
+  <nav class="site-nav" aria-label="Main menu">
+    <a href="how-it-works.html">How it works</a>
+    <a href="build-log.html">Build log</a>
+    <a href="index.html" aria-current="page">Docs</a>
+  </nav>
+</header>
+
+<div class="wrap docs">
+  <nav class="toc" aria-label="Docs contents">
+    <strong>Docs</strong>
+    <a href="index.html">Get started</a>
+    <a href="connect.html">Connect an AI</a>
+    <a href="use.html">Using it</a>
+    <a href="how-it-works.html" aria-current="page">How it works</a>
+    <a href="build-log.html">Build log</a>
+  </nav>
+
+  <main id="main" class="doc">
+    <h1>How it works</h1>
+    <p class="intro">It is one app. No server, no account.</p>
+
+    <h2 id="structure">Structure</h2>
+    <figure>
+      <div class="diagram">
+        <svg viewBox="0 0 1000 400" role="img" aria-label="Eight parts on this Mac, and the three AIs you may already use outside it. The only line leaving the Mac is the question going out from the AI connection.">
+          <defs><marker id="arr-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="currentColor"/></marker></defs>
+          <rect class="zone-a" x="20" y="30" width="640" height="354" rx="12"/>
+          <rect class="zone-b" x="760" y="30" width="220" height="354" rx="12"/>
+          <text class="zt" x="40" y="58">On this Mac</text>
+          <text class="zt" x="780" y="58">The AI you already use</text>
+
+          <rect class="box" x="40" y="80" width="280" height="56" rx="7"/>
+          <text class="t" x="180" y="104" text-anchor="middle">Notch screens</text>
+          <text class="s" x="180" y="123" text-anchor="middle">cards, answers, time left</text>
+          <rect class="box" x="40" y="156" width="280" height="56" rx="7"/>
+          <text class="t" x="180" y="180" text-anchor="middle">Sessions and timer</text>
+          <text class="s" x="180" y="199" text-anchor="middle">course, length, time left</text>
+          <rect class="box" x="40" y="232" width="280" height="56" rx="7"/>
+          <text class="t" x="180" y="256" text-anchor="middle">Distraction checks</text>
+          <text class="s" x="180" y="275" text-anchor="middle">front app, window title, tab address</text>
+          <rect class="box" x="40" y="308" width="280" height="56" rx="7"/>
+          <text class="t" x="180" y="332" text-anchor="middle">Records</text>
+          <text class="s" x="180" y="351" text-anchor="middle">sessions, questions, review cards</text>
+          <line class="ln" x1="180" y1="212" x2="180" y2="230" marker-end="url(#arr-a)"/>
+          <line class="ln" x1="180" y1="288" x2="180" y2="306" marker-end="url(#arr-a)"/>
+
+          <rect class="box" x="360" y="80" width="280" height="56" rx="7"/>
+          <text class="t" x="500" y="104" text-anchor="middle">Selection and screenshots</text>
+          <text class="s" x="500" y="123" text-anchor="middle">puts a button on the right-click menu</text>
+          <rect class="box" x="360" y="156" width="280" height="56" rx="7"/>
+          <text class="t" x="500" y="180" text-anchor="middle">Course material</text>
+          <text class="s" x="500" y="199" text-anchor="middle">finds the sentence’s page in your PDFs</text>
+          <rect class="box" x="360" y="232" width="280" height="56" rx="7"/>
+          <text class="t" x="500" y="256" text-anchor="middle">AI connection</text>
+          <text class="s" x="500" y="275" text-anchor="middle">runs the tool or calls the API</text>
+          <rect class="box" x="360" y="308" width="280" height="56" rx="7"/>
+          <text class="t" x="500" y="332" text-anchor="middle">Settings and Keychain</text>
+          <text class="s" x="500" y="351" text-anchor="middle">config.json, API key</text>
+          <line class="ln" x1="500" y1="136" x2="500" y2="154" marker-end="url(#arr-a)"/>
+          <line class="ln" x1="500" y1="212" x2="500" y2="230" marker-end="url(#arr-a)"/>
+          <path class="ln" d="M360 250H340V108H324" marker-end="url(#arr-a)"/>
+          <text class="l" transform="translate(333 182) rotate(-90)" text-anchor="middle">answer</text>
+
+          <rect class="box" x="780" y="80" width="180" height="56" rx="7"/>
+          <text class="t" x="870" y="104" text-anchor="middle">Claude app</text>
+          <text class="s" x="870" y="123" text-anchor="middle">with Claude Code inside</text>
+          <rect class="box" x="780" y="156" width="180" height="56" rx="7"/>
+          <text class="t" x="870" y="180" text-anchor="middle">Codex</text>
+          <text class="s" x="870" y="199" text-anchor="middle">ChatGPT subscription</text>
+          <rect class="box" x="780" y="232" width="180" height="56" rx="7"/>
+          <text class="t" x="870" y="256" text-anchor="middle">Claude API</text>
+          <text class="s" x="870" y="275" text-anchor="middle">API key</text>
+          <text class="s" x="870" y="332" text-anchor="middle">Any one of the three</text>
+          <text class="s" x="870" y="349" text-anchor="middle">is enough</text>
+
+          <line class="ln" x1="642" y1="250" x2="756" y2="250" marker-end="url(#arr-a)"/>
+          <text class="l" x="700" y="241" text-anchor="middle">question + page</text>
+          <line class="ln" x1="758" y1="272" x2="644" y2="272" marker-end="url(#arr-a)"/>
+          <text class="l" x="700" y="290" text-anchor="middle">answer</text>
+        </svg>
+      </div>
+      <figcaption>Only one line leaves the Mac. Nothing goes out from the distraction checks.</figcaption>
+    </figure>
+
+    <h2 id="ask">The path of one question</h2>
+    <figure>
+      <div class="diagram">
+        <svg viewBox="0 0 1000 420" role="img" aria-label="The order of one question: it starts with a right-click, finds the page in your course PDFs, asks your AI, and shows the answer in the question window.">
+          <defs><marker id="arr-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="currentColor"/></marker></defs>
+          <line class="life" x1="260" y1="52" x2="260" y2="404"/>
+          <line class="life" x1="760" y1="52" x2="760" y2="404"/>
+          <rect class="zone-a" x="150" y="16" width="220" height="36" rx="7"/>
+          <text class="t" x="260" y="39" text-anchor="middle">Mac app</text>
+          <rect class="zone-b" x="650" y="16" width="220" height="36" rx="7"/>
+          <text class="t" x="760" y="39" text-anchor="middle">Your AI</text>
+
+          <rect class="box" x="100" y="68" width="320" height="52" rx="7"/>
+          <text class="t" x="260" y="90" text-anchor="middle">① Select text and right-click</text>
+          <text class="s" x="260" y="108" text-anchor="middle">press “Ask” above the menu</text>
+          <rect class="box" x="100" y="134" width="320" height="40" rx="7"/>
+          <text class="t" x="260" y="159" text-anchor="middle">② Pick a button, press “Send”</text>
+          <rect class="box" x="100" y="188" width="320" height="52" rx="7"/>
+          <text class="t" x="260" y="210" text-anchor="middle">③ Find the sentence in your PDFs</text>
+          <text class="s" x="260" y="228" text-anchor="middle">which page, and that page’s text</text>
+
+          <line class="ln" x1="260" y1="270" x2="756" y2="270" marker-end="url(#arr-b)"/>
+          <text class="l" x="510" y="261" text-anchor="middle">④ course notes + found page + selected text + question</text>
+          <line class="ln" x1="760" y1="308" x2="264" y2="308" marker-end="url(#arr-b)"/>
+          <text class="l" x="510" y="299" text-anchor="middle">⑤ the answer streams back</text>
+
+          <rect class="box" x="100" y="328" width="320" height="52" rx="7"/>
+          <text class="t" x="260" y="350" text-anchor="middle">⑥ Show the answer and save it</text>
+          <text class="s" x="260" y="368" text-anchor="middle">math is drawn, not left as code</text>
+        </svg>
+      </div>
+      <figcaption>Step ③ is what makes this app different. The matching page of that course’s material goes along with the question, so the answer follows your professor’s notation and where you are in the course. The course’s PDFs are also the AI’s project: it can open the rest of them when that one page isn’t enough.</figcaption>
+    </figure>
+
+    <h2 id="find">Finding the page</h2>
+    <p>The first time it sees a PDF, it extracts the text of every page and saves it in <code>materials/_text/</code>. It removes all spaces and punctuation from both the selected sentence and each page’s text and lowercases them, then looks for the page that contains the beginning, middle and end of the sentence. Words broken by line breaks or hyphens still match.</p>
+    <p>Files with no text layer, such as scanned PDFs, can’t be searched. Ask with a capture instead and it reads the picture itself.</p>
+
+    <h2 id="menu">How the right-click button appears</h2>
+    <p>macOS doesn’t let an app add items to another app’s right-click menu; the only allowed route is inside Services at the bottom. So instead of putting the button in the menu, it attaches the button right above it.</p>
+    <ol>
+      <li>It notices that a right-click happened. It looks only at where you clicked, not at what you clicked.</li>
+      <li>It carries on only if the front app has selected text. For apps that don’t say, it judges by whether you just dragged.</li>
+      <li>It reads the position and size of the menu window that just opened and shows the button above it at the same width. It never reads the window’s contents.</li>
+      <li>When the menu closes, the button disappears.</li>
+    </ol>
+
+    <h2 id="select">How selected text is read</h2>
+    <ol>
+      <li>Nothing is read before you press the button.</li>
+      <li>When you press it, it asks the front app for its current selection, using the Accessibility permission.</li>
+      <li>In apps that don’t answer, it copies once and immediately restores your clipboard.</li>
+    </ol>
+
+    <h2 id="focus">Judging drift</h2>
+    <p>During a session it checks the frontmost app every 2 seconds, and for a browser, the address of the tab.</p>
+    <ol>
+      <li>Allowed if you pressed “It’s for study” for it in this session.</li>
+      <li>Allowed if it is on that course’s allow list or the shared allow list.</li>
+      <li>A distraction if it is on the distraction list.</li>
+      <li>Otherwise it isn’t counted.</li>
+    </ol>
+    <p>In the lists, an entry with a dot is a site: <code>youtube.com</code> matches <code>m.youtube.com</code> but not <code>notyoutube.com</code>. An entry without a dot is an app name.</p>
+
+    <h2 id="data">Where your data lives</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Data</th><th>Where</th><th>Leaves your Mac</th></tr></thead>
+        <tbody>
+          <tr><td>Apps and sites you visited</td><td>Only in memory, then gone</td><td>Never</td></tr>
+          <tr><td>Session history</td><td><code>~/StudyNotch/sessions.jsonl</code></td><td>Never</td></tr>
+          <tr><td>Course PDFs and extracted text</td><td><code>Courses/&lt;course&gt;/materials/</code></td><td>Only the one page that matches a question</td></tr>
+          <tr><td>Questions and answers</td><td><code>Courses/&lt;course&gt;/log/</code></td><td>To the AI, when you ask</td></tr>
+          <tr><td>Captures</td><td><code>~/StudyNotch/Captures/</code>, deleted after a week</td><td>To the AI, when you ask</td></tr>
+          <tr><td>API key</td><td>Mac Keychain</td><td>Only to Anthropic</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>To draw math in answers, the KaTeX and marked libraries are loaded from a public CDN, which leaves an access record there. The next version will bundle them in the app and remove that connection.</p>
+
+    <h2 id="permissions">Permissions</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Permission</th><th>Reads</th><th>Never reads</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Accessibility</strong></td><td>Selected text, the frontmost window’s title</td><td>Keystrokes, screen contents</td></tr>
+          <tr><td><strong>Screen Recording</strong></td><td>The area you capture with “Capture and ask”</td><td>The rest of the screen</td></tr>
+          <tr><td><strong>Automation</strong></td><td>The address of the browser’s front tab</td><td>Page contents, other tabs</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="next"><a href="use.html">Previous: Using it</a><a href="build-log.html">Next: Build log</a></div>
+  </main>
+</div>
+
+<footer class="wrap site-foot">
+  <p>StudyNotch is a working name, and this is an early version still in development.</p>
+</footer>
+</body>
+</html>

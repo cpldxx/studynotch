@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Connect an AI | StudyNotch docs</title>
+<meta name="description" content="How StudyNotch gets answers from Claude, ChatGPT or Gemini on your Mac, or from an API key, and how to pick one.">
+<meta name="theme-color" content="#FFFFFF">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hahmlet:wght@400;700&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="wrap site-head">
+  <a class="brand" href="../index.html" translate="no"><img src="../assets/img/app-icon.png" width="30" height="30" alt="">StudyNotch</a>
+  <nav class="site-nav" aria-label="Main menu">
+    <a href="how-it-works.html">How it works</a>
+    <a href="build-log.html">Build log</a>
+    <a href="index.html" aria-current="page">Docs</a>
+  </nav>
+</header>
+
+<div class="wrap docs">
+  <nav class="toc" aria-label="Docs contents">
+    <strong>Docs</strong>
+    <a href="index.html">Get started</a>
+    <a href="connect.html" aria-current="page">Connect an AI</a>
+    <a href="use.html">Using it</a>
+    <a href="how-it-works.html">How it works</a>
+    <a href="build-log.html">Build log</a>
+  </nav>
+
+  <main id="main" class="doc">
+    <h1>Connect an AI</h1>
+    <p class="intro">StudyNotch has no server. It quietly runs the AI you already use, Claude, ChatGPT or Gemini, signed in with your own account, and takes only the answer. No chat window opens.</p>
+
+    <h2 id="choose">The first step is connecting one</h2>
+    <p>On first launch the notch opens at step 1, “First, connect the AI that answers you”. Claude, ChatGPT and Gemini each have a tile that says what it needs. Click the one you want; the tile does the next thing.</p>
+    <p>Only the AI you connect gets your questions. Being signed in to the ChatGPT or Claude app on your Mac doesn’t connect it: StudyNotch asks first, and says which account the questions will go to.</p>
+    <figure class="shot"><img src="../assets/img/app/08e-setup-confirm.png" width="640" height="236" alt="Claude and ChatGPT both say “Signed in on this Mac”. After a click on Claude, the card asks “Connect Claude with this account?” and shows the account’s email and plan, with Cancel, Another account and Connect."></figure>
+    <figure class="shot"><img src="../assets/img/app/08-setup.png" width="640" height="236" alt="Step 1 of the setup card: three tiles. Claude says “Connected” and shows the account’s email, ChatGPT says “Sign in”, Gemini says “Install”. Under them: Disconnect, Another account, Test connection and Next."></figure>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>The tile says</th><th>Clicking it</th></tr></thead>
+        <tbody>
+          <tr><td>Signed in on this Mac</td><td>Asks “Connect … with this account?” and shows the account’s email and plan. “Connect” uses it; “Another account” opens the sign-in page instead. Nothing is sent until you choose.</td></tr>
+          <tr><td>Connected</td><td>This is the one that answers, and the tile shows its account. “Disconnect” under the tiles stops it.</td></tr>
+          <tr><td>Sign in</td><td>Opens Claude’s or ChatGPT’s sign-in page in your browser (a Terminal window starts it). StudyNotch never sees your password.</td></tr>
+          <tr><td>Install</td><td>Gemini only: installs Google’s Antigravity CLI with Homebrew in a Terminal window, then starts its sign-in.</td></tr>
+          <tr><td>Get the Claude app / Get the ChatGPT app</td><td>Opens the download page. Install the app and sign in there.</td></tr>
+          <tr><td>Finish signing in</td><td>A window is waiting for you. The tile checks every few seconds and connects it as soon as you have signed in there.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>To change it later, press the gear in the notch, or use AI connection in the menu bar icon. If nothing can answer when StudyNotch starts (say, you signed out), it opens at step 1 again.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Connection</th><th>Best for</th><th>Cost</th><th>Answer streams in</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Claude app</strong></td><td>People with a Claude subscription</td><td>Included in the subscription</td><td>Yes</td></tr>
+          <tr><td><strong>ChatGPT app</strong></td><td>People with a ChatGPT subscription</td><td>Included in the subscription</td><td>All at once, when done</td></tr>
+          <tr><td><strong>Gemini</strong></td><td>People with a Google account</td><td>Depends on your Google plan</td><td>Line by line</td></tr>
+          <tr><td><strong>API key</strong></td><td>People who would rather pay per use than subscribe</td><td>Pay for what you use</td><td>Yes</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Only one is connected at a time. If it stops working (say, you signed out), StudyNotch tells you and doesn’t switch to another AI on its own.</p>
+
+    <h2 id="account">Using another account</h2>
+    <p>The Claude app and the ChatGPT app may be signed in with an account you don’t want to study with. “Another account” opens the service’s own sign-in page, and you sign in with whichever account you like.</p>
+    <ul>
+      <li>That sign-in is kept only for StudyNotch, in <code>~/StudyNotch/.accounts</code>. The Claude app and the ChatGPT app stay signed in exactly as they were.</li>
+      <li>The AI that is connected keeps answering until the new sign-in is done. Then StudyNotch switches to the new account.</li>
+      <li>“Disconnect” signs that StudyNotch-only account out again.</li>
+      <li>Gemini has one Google sign-in for the whole Mac. “Another account” opens <code>agy</code> so you can type <code>/logout</code> and sign in again.</li>
+    </ul>
+
+    <h2 id="test">Checking that it really works</h2>
+    <p>Press “Test connection”. StudyNotch sends one real question to the connected AI, the same way your study questions go, and shows the answer and how long it took. If the AI can’t answer, the line says why.</p>
+    <figure class="shot"><img src="../assets/img/app/08f-setup-tested.png" width="640" height="236" alt="After Test connection, the line under the title reads: Real answer from Claude in 2.3 s: “Connected to StudyNotch”."></figure>
+
+    <h2 id="where">Where your questions go, and where they don’t show up</h2>
+    <ul>
+      <li>They go to the account on the tile, and count toward that plan’s usage, the same as using Claude or ChatGPT yourself.</li>
+      <li>They travel through the service’s own tool (Claude Code for Claude, Codex for ChatGPT, Antigravity for Gemini), not through the chat window. So they do <strong>not</strong> appear in the chat list on claude.ai, chatgpt.com or in the desktop apps.</li>
+      <li>The Projects you make in those chat windows can’t be filled from outside: neither Claude nor ChatGPT offers a way to add files to a chat Project except by hand. What these tools do have is a project that is a folder, and that is what a course becomes (below).</li>
+      <li>StudyNotch asks the tool not to save the conversation. The only copy is in your own course folder’s log.</li>
+    </ul>
+
+    <h2 id="project">A course is the AI’s project</h2>
+    <p>The folders and PDFs you give a course are not only searched by StudyNotch. They are handed to the connected AI as its project, so it can open them itself when the page that came with your question isn’t enough: a definition from three lectures ago, a due date in the syllabus, the next step of a proof.</p>
+    <ul>
+      <li>StudyNotch keeps a text copy of every PDF of the course, its own and the ones in linked folders, in the course’s <code>text</code> folder, with a mark before each page. The AI works in that folder and may also open the PDFs copied into the course.</li>
+      <li>It is read-only. Nothing in your folders is changed, and nothing is written into a linked folder.</li>
+      <li>Only PDFs count. Other files in a linked folder are not copied and not handed over.</li>
+      <li>An everyday question is still answered at once from the matching page. The AI opens files only when it needs to, and the question window then says “Reading your course files”. The answer ends with the file and page it used.</li>
+      <li>With an API key there is no tool to open files, so only the matching page goes with the question.</li>
+    </ul>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>AI</th><th>What it may open</th><th>Tried for real</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Claude</strong></td><td>The course’s <code>text</code> and <code>materials</code> folders, and nothing else: a file outside them is refused.</td><td>Yes</td></tr>
+          <tr><td><strong>ChatGPT</strong></td><td>It is started in the course’s <code>text</code> folder and can’t change anything. Its read-only mode doesn’t fence it off from other files on the Mac.</td><td>Yes</td></tr>
+          <tr><td><strong>Gemini</strong></td><td>The same two folders are added to its workspace.</td><td>Not yet</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="claude">How Claude answers</h2>
+    <p>The Claude app keeps the official Claude Code tool inside its own folder, signed in to the same account as the app. Each time you ask, StudyNotch runs that tool once in the background and shows only the answer in the question window.</p>
+    <ul>
+      <li>It never clicks the Claude app’s window or reads its screen. The app doesn’t even need to be open.</li>
+      <li>The tool gets read-only access to the course’s <code>text</code> and <code>materials</code> folders, and to a capture if there is one. Outside a course (General) it can’t read any file.</li>
+      <li>Running commands, editing files and web search are turned off. Conversations aren’t saved.</li>
+    </ul>
+    <p>If you installed <a href="https://code.claude.com/docs/en/setup">Claude Code</a> on its own and signed in from the Terminal, without the Claude app, it uses that instead.</p>
+
+    <h2 id="codex">ChatGPT</h2>
+    <p>The ChatGPT app keeps the Codex tool inside it, signed in to the same ChatGPT account. StudyNotch uses that one (or a Codex you installed yourself). If it isn’t signed in, pick ChatGPT under AI connection and sign in in the window that opens.</p>
+    <p>It runs read-only. The answer doesn’t stream in word by word; it appears all at once when it is done.</p>
+
+    <h2 id="gemini">Gemini</h2>
+    <p>Gemini answers through Google’s <a href="https://antigravity.google/product/antigravity-cli">Antigravity CLI</a> (<code>agy</code>). Google’s older <code>gemini</code> tool stopped answering personal Google accounts on 18 June 2026, so StudyNotch doesn’t use it.</p>
+    <ol>
+      <li>Click the Gemini tile. If your Mac has <a href="https://brew.sh">Homebrew</a>, a Terminal window installs <code>agy</code>; without Homebrew, the Antigravity CLI page opens instead.</li>
+      <li>The browser opens for Google Sign-In. When <code>agy</code> shows its prompt in the Terminal window, you’re signed in; close the window.</li>
+    </ol>
+    <p>The answer comes in line by line. Gemini answers haven’t been tested with a real account yet.</p>
+
+    <h2 id="key">API key</h2>
+    <ol>
+      <li>In step 1, press “Use an API key instead”.</li>
+      <li>Paste an Anthropic API key and save.</li>
+    </ol>
+    <p>Saving the key connects it. The key is stored only in your Mac’s Keychain. Save an empty field to delete it. The default model is <code>claude-opus-5-5</code>; change it with <code>ai.model</code> in <code>config.json</code>. Anthropic bills you for what you use.</p>
+
+    <h2 id="sent">What gets sent</h2>
+    <ul>
+      <li>The selected text, or one capture</li>
+      <li>Your course notes (<code>course.md</code>) and the text of the matching page in your material</li>
+      <li>Any page of the course’s PDFs that the AI opens to answer</li>
+      <li>The name and window title of the app you were reading in</li>
+      <li>Your question, and the earlier questions and answers in the same window</li>
+    </ul>
+    <p>Which sites you visited is never sent. Files in a linked folder that aren’t PDFs are never handed over.</p>
+
+    <h2 id="trouble">Troubleshooting</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>What you see</th><th>What to do</th></tr></thead>
+        <tbody>
+          <tr><td>“No AI is connected yet”</td><td>Press “Choose AI”, click a tile and connect it. If you just installed or signed in, press “Check again”.</td></tr>
+          <tr><td>“… isn’t signed in anymore”</td><td>The AI you connected signed out. Click its tile to sign in again, or connect another one.</td></tr>
+          <tr><td>“… isn’t signed in”</td><td>Click its tile (gear in the notch, or AI connection in the menu bar icon); its sign-in opens in a Terminal window.</td></tr>
+          <tr><td>“StudyNotch can’t read the text you pick yet”</td><td>Turn on StudyNotch under System Settings › Privacy &amp; Security › Accessibility, then pick the text again.</td></tr>
+          <tr><td>“The API key isn’t valid”</td><td>Enter the key again from the menu.</td></tr>
+          <tr><td>“Can’t connect”</td><td>Check your internet connection and press “Try again”.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout"><strong>If you plan to share it.</strong> Having another app run a tool that is signed in with your subscription was designed for personal use. Check each service’s terms before you share this app with other people.</div>
+
+    <div class="next"><a href="index.html">Previous: Get started</a><a href="use.html">Next: Using it</a></div>
+  </main>
+</div>
+
+<footer class="wrap site-foot">
+  <p>Claude and Claude Code are trademarks of Anthropic. ChatGPT and Codex are trademarks of OpenAI. Gemini and Antigravity are trademarks of Google. StudyNotch is not affiliated with any of these companies.</p>
+</footer>
+</body>
+</html>

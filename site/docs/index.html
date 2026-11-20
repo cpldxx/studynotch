@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Get started | StudyNotch docs</title>
+<meta name="description" content="How to build StudyNotch from source and launch it for the first time.">
+<meta name="theme-color" content="#FFFFFF">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hahmlet:wght@400;700&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="wrap site-head">
+  <a class="brand" href="../index.html" translate="no"><img src="../assets/img/app-icon.png" width="30" height="30" alt="">StudyNotch</a>
+  <nav class="site-nav" aria-label="Main menu">
+    <a href="how-it-works.html">How it works</a>
+    <a href="build-log.html">Build log</a>
+    <a href="index.html" aria-current="page">Docs</a>
+  </nav>
+</header>
+
+<div class="wrap docs">
+  <nav class="toc" aria-label="Docs contents">
+    <strong>Docs</strong>
+    <a href="index.html" aria-current="page">Get started</a>
+    <a href="connect.html">Connect an AI</a>
+    <a href="use.html">Using it</a>
+    <a href="how-it-works.html">How it works</a>
+    <a href="build-log.html">Build log</a>
+  </nav>
+
+  <main id="main" class="doc">
+    <h1>Get started</h1>
+    <p class="intro">From building it from source to your first session.</p>
+    <div class="callout"><strong>Answers in Korean?</strong> Type your question in Korean and the answer comes back in Korean. A button pressed on its own gets an English answer.</div>
+
+    <h2 id="need">What you need</h2>
+    <ul>
+      <li>A Mac running macOS 13 or later. It doesn’t need a notch: on a screen without one, a small bar in the middle of the menu bar plays the notch’s part.</li>
+      <li>Xcode or the Xcode command line tools, with Swift 5.9 or later.</li>
+      <li>An account with Claude, ChatGPT or Google, for answers. The first step of the app connects it (<a href="connect.html">Connect an AI</a>). Without any AI, the timer and drift cards still work.</li>
+    </ul>
+
+    <h2 id="build">Build and launch</h2>
+    <p>Run these from the project folder, one after the other.</p>
+<pre><code>./scripts/build.sh</code></pre>
+<pre><code>open build/StudyNotch.app</code></pre>
+    <p>If your Mac has a signing certificate, the build is signed with it, so the permissions you granted survive a rebuild. Without one it gets a temporary signature, and you have to grant the permissions again after every rebuild.</p>
+
+    <h2 id="first">First launch</h2>
+    <p>A card drops down from the top centre of the screen and walks you through two steps. Step 1 is connecting the AI that answers: click Claude, ChatGPT or Gemini, and the tile asks before connecting it, signs you in, or installs or downloads what is missing (<a href="connect.html#choose">how each tile works</a>).</p>
+    <figure class="shot"><img src="../assets/img/app/08-setup.png" width="640" height="236" alt="Step 1: three tiles for Claude, ChatGPT and Gemini, each saying what it needs."></figure>
+    <p>Step 2 is the Mac’s permissions. You can skip either step; here is what won’t work if you do.</p>
+    <figure class="shot"><img src="../assets/img/app/08d-setup-permissions.png" width="640" height="236" alt="Step 2: rows for Accessibility and Screen Recording, with Back and Get started."></figure>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Item</th><th>Used for</th><th>Without it</th></tr></thead>
+        <tbody>
+          <tr><td><strong>AI connection</strong></td><td>Answering questions</td><td>No answers. The timer and drift cards still work.</td></tr>
+          <tr><td><strong>Accessibility</strong></td><td>Reading selected text and window titles</td><td>The right-click button still appears, but it can’t read what you selected. You can still type a question or ask with a screenshot.</td></tr>
+          <tr><td><strong>Screen Recording</strong></td><td>“Capture and ask”</td><td>Captures come out blank. You can still take a regular Mac screenshot and ask about it.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Your Mac asks separately the first time it reads a browser tab’s address during a session.</p>
+
+    <h2 id="session">Your first session</h2>
+    <ol>
+      <li>Point at the notch, or click the highlighter icon in the menu bar.</li>
+      <li>Click a course. “General” runs the timer only, with no material.</li>
+      <li>Select some text anywhere and right-click. “Ask” is at the top of the menu.</li>
+      <li>In the window that opens, pick a button and press “Send”.</li>
+    </ol>
+
+    <h2 id="materials">Adding a course and its material</h2>
+    <p>Open the “+” tab. Type the course’s name, and give it its material before you press “Add”:</p>
+    <ul>
+      <li><strong>Link folder</strong> links a folder you already keep, say <code>Documents/MATH 237</code>. Its PDFs are read where they are; nothing is copied, and the folder is never changed.</li>
+      <li><strong>Add PDFs</strong> copies single PDFs into the course’s own folder.</li>
+      <li>Or drag PDFs or a folder onto the island. A dropped folder offers its name for the course.</li>
+    </ul>
+    <figure class="shot"><img src="../assets/img/app/09d-add-picked.png" width="640" height="204" alt="The Add tab with a new course called ACTSCI 221. On the right, a list: a folder with 12 PDFs and one PDF, each with a ✕. Under the buttons: “Kept only if you press Add.”"></figure>
+    <p>What you picked only waits in the list. “Add” makes the course with it; close the tab without pressing “Add” and nothing is kept, and no course is made.</p>
+    <h3 id="edit">Changing a course later</h3>
+    <p>On the Home tab, pick the course and press “Edit” on its card. There you can link another folder or unlink one (✕; the folder itself stays), add PDFs, take a copied PDF out (✕; it goes to the Trash), rename the course, or remove it. “Remove course” asks first, moves the course’s own folder to the Trash and leaves linked folders where they are.</p>
+    <figure class="shot"><img src="../assets/img/app/09e-edit-course.png" width="640" height="204" alt="The Add tab editing MATH 237: a name field with Rename, Link folder and Add PDFs, Show in Finder and Remove course. On the right, one linked folder and three PDFs."></figure>
+    <p>A PDF dragged onto the notch during a session goes straight into that session’s course. The first time StudyNotch reads a linked folder in Documents, Desktop or Downloads, your Mac may ask you to allow it.</p>
+
+    <div class="next"><span></span><a href="connect.html">Next: Connect an AI</a></div>
+  </main>
+</div>
+
+<footer class="wrap site-foot">
+  <p>StudyNotch is a working name, and this is an early version still in development.</p>
+</footer>
+</body>
+</html>

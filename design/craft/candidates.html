@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mascot candidates</title>
+<meta name="description" content="Three mascot candidates drawn from silhouettes, each with a large and a 20 px master and five states.">
+<style>
+  :root { --paper: #FFFFFF; --desk: #EDF0F3; --ink: #14233B; --graphite: #566173; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 40px 16px 48px; background: var(--paper); color: var(--ink);
+    font: 15px/1.4 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif; }
+  h1 { max-width: 1200px; margin: 0 auto 24px; font-size: 22px; font-weight: 650; letter-spacing: -0.01em; }
+  .grid { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  article { background: var(--desk); border-radius: 24px; padding: 20px; display: grid; gap: 14px; }
+  h2 { margin: 0; font-size: 17px; font-weight: 600; display: flex; gap: 10px; align-items: baseline; }
+  h2 span { color: var(--graphite); font-weight: 500; font-variant-numeric: tabular-nums; }
+  .hero svg { width: 100%; height: auto; display: block; }
+  .states { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+  .states figure { margin: 0; background: var(--paper); border-radius: 12px; padding: 4px 4px 6px; display: grid; justify-items: center; }
+  .states svg { width: 100%; height: auto; display: block; }
+  .states figcaption { font-size: 11px; color: var(--graphite); }
+  .island { background: #000; border-radius: 0 0 16px 16px; height: 34px; display: flex; align-items: center; justify-content: space-between; padding: 0 30px; }
+  .island svg { width: 20px; height: 20px; display: block; }
+  .island .ears { display: flex; gap: 14px; }
+  @media (max-width: 900px) { .grid { grid-template-columns: minmax(0, 1fr); max-width: 460px; } }
+  .eye { transform-box: fill-box; transform-origin: 50% 100%; }
+  .blink .eye { animation: blink 160ms ease-in-out; }
+  @keyframes blink { 50% { transform: scaleY(0.1); } }
+  @media (prefers-reduced-motion: reduce) { .blink .eye { animation: none; } }
+</style>
+</head>
+<body>
+<h1>Mascot candidates</h1>
+<div class="grid" id="grid"></div>
+<script src="mascots.js"></script>
+<script>
+const M = window.Mascots, grid = document.getElementById('grid');
+M.list.forEach((m, i) => {
+  const states = M.STATES.map(s => `<figure>${M.large(m, s)}<figcaption>${s}</figcaption></figure>`).join('');
+  const ears = ['idle', 'focus', 'writing', 'drift', 'break'].map(s => M.small(m, s)).join('');
+  grid.insertAdjacentHTML('beforeend', `<article>
+    <h2><span>${i + 1}</span>${m.name}</h2>
+    <div class="hero">${M.large(m, 'idle')}</div>
+    <div class="states">${states}</div>
+    <div class="island" aria-label="${m.name} at notch size, in five states">${M.small(m, 'idle')}<div class="ears">${ears}</div></div>
+  </article>`);
+});
+// Blinks come at random intervals, more often when idle than when focused: never on a fixed loop.
+const heroes = [...document.querySelectorAll('.hero')];
+heroes.forEach(h => {
+  const next = () => setTimeout(() => { h.classList.remove('blink'); void h.offsetWidth; h.classList.add('blink'); next(); }, 2200 + Math.random() * 4200);
+  next();
+});
+</script>
+</body>
+</html>

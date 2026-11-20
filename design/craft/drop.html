@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Droplet mascots</title>
+<meta name="description" content="A glossy grey droplet in 3D whose eyes change colour and shape with the study state. WebGL, no libraries.">
+<style>
+  :root { --paper: #FFFFFF; --desk: #EDF0F3; --ink: #14233B; --graphite: #566173; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 40px 16px 48px; background: var(--paper); color: var(--ink);
+    font: 15px/1.4 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif; }
+  h1 { max-width: 1200px; margin: 0 auto 24px; font-size: 22px; font-weight: 650; letter-spacing: -0.01em; }
+  .grid { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  article { background: var(--desk); border-radius: 24px; padding: 18px; display: grid; gap: 12px; }
+  h2 { margin: 0; font-size: 17px; font-weight: 600; display: flex; gap: 10px; align-items: baseline; }
+  h2 span { color: var(--graphite); font-weight: 500; }
+  .hero { width: 100%; aspect-ratio: 1; display: block; border-radius: 18px; background: #000; }
+  .states { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 5px; }
+  .states figure { margin: 0; display: grid; justify-items: center; gap: 3px; }
+  .states canvas { width: 100%; aspect-ratio: 1; display: block; border-radius: 9px; background: #000; }
+  .states figcaption { font-size: 10.5px; color: var(--graphite); }
+  .island { background: #000; border-radius: 0 0 16px 16px; height: 34px; display: flex; align-items: center; justify-content: space-between; padding: 0 22px; }
+  .island canvas { width: 24px; height: 24px; display: block; }
+  .island .ears { display: flex; gap: 8px; }
+  @media (max-width: 900px) { .grid { grid-template-columns: minmax(0, 1fr); max-width: 460px; } }
+</style>
+</head>
+<body>
+<h1>Droplet mascots</h1>
+<div class="grid" id="grid"></div>
+<script id="fs" type="x-shader/x-fragment">
+precision highp float;
+uniform vec2 uRes;
+uniform vec3 uCam;      // yaw, pitch, distance
+uniform vec3 uTarget;
+uniform float uAA;
+uniform float uVariant; // 0 Drop, 1 Curl, 2 Squat
+uniform vec3 uEyeCol;   // sRGB
+uniform vec3 uTint;     // sRGB, the state colour that seeps into the lower body
+uniform vec4 uEye;      // open, shape (0 open, 1 smile, 2 closed), look x, look y
+uniform vec4 uBody;     // lean, squash, tip bend, blink
+
+float smin(float a, float b, float k) { float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0); return mix(b, a, h) - k * h * (1.0 - h); }
+float sdSphere(vec3 p, float r) { return length(p) - r; }
+float sdEllipsoid(vec3 p, vec3 r) { float k0 = length(p / r); float k1 = length(p / (r * r)); return k0 * (k0 - 1.0) / k1; }
+float sdRoundCone(vec3 p, vec3 a, vec3 b, float r1, float r2) {
+  vec3 ba = b - a; float l2 = dot(ba, ba), rr = r1 - r2, a2 = l2 - rr * rr, il2 = 1.0 / l2;
+  vec3 pa = p - a; float y = dot(pa, ba), z = y - l2;
+  vec3 xv = pa * l2 - ba * y; float x2 = dot(xv, xv), y2 = y * y * l2, z2 = z * z * l2;
+  float k = sign(rr) * rr * rr * x2;
+  if (sign(z) * a2 * z2 > k) return sqrt(x2 + z2) * il2 - r2;
+  if (sign(y) * a2 * y2 < k) return sqrt(x2 + y2) * il2 - r1;
+  return (sqrt(x2 * a2 * il2) + y * rr) * il2 - r1;
+}
+mat2 rot(float a) { float c = cos(a), s = sin(a); return mat2(c, -s, s, c); }
+
+// Body space: lean around the point that touches the floor, squash towards the floor.
+vec3 bodySpace(vec3 p) { p.xy = rot(uBody.x) * p.xy; p.y /= uBody.y; return p; }
+
+float drop(vec3 p) {
+  float tip = uBody.z;
+  if (uVariant < 0.5) {
+    return sdRoundCone(p, vec3(0.0, 0.42, 0.0), vec3(tip * 0.22, 1.08, -0.02), 0.42, 0.03);
+  } else if (uVariant < 1.5) {
+    vec3 t1 = vec3(0.04 + tip * 0.18, 0.97, -0.02), t2 = vec3(0.20 + tip * 0.26, 1.07, -0.02);
+    float d = sdRoundCone(p, vec3(0.0, 0.42, 0.0), t1, 0.42, 0.055);
+    d = smin(d, sdRoundCone(p, t1, t2, 0.055, 0.034), 0.035);
+    return d;
+  }
+  float d = sdRoundCone(p, vec3(0.0, 0.40, 0.0), vec3(-0.10 + tip * 0.22, 0.88, -0.06), 0.46, 0.04);
+  d = smin(d, sdEllipsoid(p - vec3(-0.17, 0.05, 0.22), vec3(0.10, 0.065, 0.11)), 0.07);
+  d = smin(d, sdEllipsoid(p - vec3(0.17, 0.05, 0.22), vec3(0.10, 0.065, 0.11)), 0.07);
+  return d;
+}
+float bodyR() { return uVariant > 1.5 ? 0.46 : 0.42; }
+float bodyC() { return uVariant > 1.5 ? 0.40 : 0.42; }
+
+// An arc eye, cut from a ring: up = 1 for a smile (∩), -1 for closed (∪).
+float arcEye(vec3 q, float up) {
+  vec2 v = q.xy; v.y *= up;
+  float R = 0.046, th = 0.017;
+  float d2 = v.y > 0.0 ? abs(length(v) - R) - th : min(length(v - vec2(R, 0.0)), length(v + vec2(R, 0.0))) - th;
+  float dz = abs(q.z) - 0.05;
+  return length(max(vec2(d2, dz), 0.0)) + min(max(d2, dz), 0.0) - 0.004;
+}
+float eyes(vec3 p) {
+  float d = 1e5;
+  for (int i = 0; i < 2; i++) {
+    float s = i == 0 ? -1.0 : 1.0;
+    float ex = s * 0.145 + uEye.z * 0.06, ey = bodyC() + 0.06 + uEye.w * 0.045;
+    float R = bodyR();
+    float ez = sqrt(max(R * R - ex * ex - (ey - bodyC()) * (ey - bodyC()), 0.01)) - (uEye.y < 0.5 ? 0.012 : 0.0);
+    vec3 q = p - vec3(ex, ey, ez);
+    // Face the eye along the body's surface.
+    vec3 n = normalize(vec3(ex, ey - bodyC(), ez));
+    float yawE = atan(n.x, n.z);
+    q.xz = rot(yawE) * q.xz;
+    float e;
+    if (uEye.y < 0.5) {
+      float open = max(uEye.x * (1.0 - uBody.w), 0.07);
+      e = sdEllipsoid(q, vec3(0.058, 0.095 * open, 0.036));
+    } else if (uEye.y < 1.5) e = arcEye(q + vec3(0.0, 0.015, 0.0), 1.0);
+    else e = arcEye(q + vec3(0.0, -0.015, 0.0), -1.0);
+    d = min(d, e);
+  }
+  return d;
+}
+// x: distance, y: material (1 body, 2 eye, 5 floor), z: distance to the eyes (for their glow)
+vec3 map(vec3 p) {
+  vec3 b = bodySpace(p);
+  float body = drop(b) * min(uBody.y, 1.0);
+  float e = eyes(b) * min(uBody.y, 1.0);
+  vec3 r = vec3(body, 1.0, e);
+  if (e < r.x) r.xy = vec2(e, 2.0);
+  if (p.y < r.x) r.xy = vec2(p.y, 5.0);
+  return r;
+}
+vec3 normal(vec3 p) {
+  vec2 e = vec2(0.0006, 0.0);
+  return normalize(vec3(map(p + e.xyy).x - map(p - e.xyy).x, map(p + e.yxy).x - map(p - e.yxy).x, map(p + e.yyx).x - map(p - e.yyx).x));
+}
+float shadow(vec3 ro, vec3 rd) {
+  float res = 1.0, t = 0.02;
+  for (int i = 0; i < 56; i++) { float h = map(ro + rd * t).x; res = min(res, 5.0 * h / t); t += clamp(h, 0.008, 0.12); if (res < 0.002 || t > 3.0) break; }
+  return clamp(res, 0.0, 1.0);
+}
+float occlusion(vec3 p, vec3 n) {
+  float occ = 0.0, sca = 1.0;
+  for (int i = 0; i < 6; i++) { float h = 0.012 + 0.15 * float(i) / 5.0; occ += (h - map(p + h * n).x) * sca; sca *= 0.86; }
+  return clamp(1.0 - 2.2 * occ, 0.0, 1.0);
+}
+// A dark studio: one big softbox up and to the left, a cool strip behind on the right for the rim.
+vec3 studio(vec3 r) {
+  vec3 c = mix(vec3(0.004), vec3(0.03, 0.032, 0.036), smoothstep(-0.3, 0.6, r.y));
+  c += vec3(4.0, 3.9, 3.7) * smoothstep(0.82, 0.94, dot(r, normalize(vec3(-0.6, 0.7, 0.4))));
+  c += vec3(1.4, 1.6, 2.0) * smoothstep(0.90, 0.98, dot(r, normalize(vec3(0.85, 0.35, -0.4))));
+  return c;
+}
+vec3 toLin(vec3 c) { return pow(c, vec3(2.2)); }
+vec3 aces(vec3 x) { return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0); }
+
+vec3 render(vec2 frag) {
+  vec2 uv = (2.0 * frag - uRes) / uRes.y;
+  vec3 ro = uTarget + uCam.z * vec3(sin(uCam.x) * cos(uCam.y), sin(uCam.y), cos(uCam.x) * cos(uCam.y));
+  vec3 fw = normalize(uTarget - ro), rt = normalize(cross(fw, vec3(0, 1, 0))), up = cross(rt, fw);
+  vec3 rd = normalize(fw * 3.4 + uv.x * rt + uv.y * up);
+  float t = 0.0, eyeMin = 1e5; vec3 h = vec3(0.0); bool hit = false;
+  for (int i = 0; i < 160; i++) {
+    h = map(ro + rd * t);
+    eyeMin = min(eyeMin, h.z);
+    if (abs(h.x) < 0.0004 * t) { hit = true; break; }
+    t += h.x * 0.8;
+    if (t > 20.0) break;
+  }
+  vec3 eyeLin = toLin(uEyeCol);
+  float glow = exp(-eyeMin * 24.0) * 0.3;
+  vec3 bg = vec3(0.0);
+  if (!hit || h.y > 4.5) {
+    vec3 c = bg;
+    if (hit) {
+      vec3 p = ro + rd * t;
+      float sh = shadow(p + vec3(0, 0.003, 0), normalize(vec3(-0.35, 1.0, 0.35)));
+      float occ = occlusion(p, vec3(0, 1, 0));
+      // A faint pool of the eye colour on the floor in front of the body.
+      float pool = exp(-length((p.xz - vec2(0.0, 0.42)) * vec2(1.6, 2.4)) * 3.0) * 0.08;
+      c = eyeLin * pool * occ;
+      c *= sh * 0.6 + 0.4;
+    }
+    c += eyeLin * glow;
+    return pow(aces(c), vec3(1.0 / 2.2));
+  }
+  vec3 p = ro + rd * t, n = normal(p);
+  vec3 L = normalize(vec3(-0.45, 0.9, 0.5));
+  float sh = shadow(p + n * 0.003, L);
+  float occ = occlusion(p, n);
+  float fre = pow(clamp(1.0 + dot(n, rd), 0.0, 1.0), 4.0);
+  vec3 col;
+  if (h.y < 1.5) {
+    // Grey with a gradient: light at the tip, the state colour seeping into the bottom.
+    vec3 b = bodySpace(p);
+    float g = smoothstep(0.0, 1.05, b.y);
+    vec3 top = toLin(vec3(0.55, 0.58, 0.62)), mid = toLin(vec3(0.38, 0.41, 0.47)), low = mix(toLin(vec3(0.23, 0.26, 0.32)), toLin(uTint), 0.6);
+    vec3 alb = g > 0.5 ? mix(mid, top, (g - 0.5) * 2.0) : mix(low, mid, g * 2.0);
+    float dif = clamp((dot(n, L) + 0.3) / 1.3, 0.0, 1.0) * mix(1.0, sh, 0.85);
+    float sky = 0.5 + 0.5 * n.y;
+    vec3 rimL = normalize(vec3(0.8, 0.3, -0.6));
+    float rim = pow(clamp(1.0 + dot(n, rd), 0.0, 1.0), 2.5) * clamp(dot(n, rimL) + 0.4, 0.0, 1.0);
+    col = alb * (1.05 * dif * vec3(1.0, 0.97, 0.93) + 0.22 * sky * occ * vec3(0.85, 0.9, 1.0));
+    col += vec3(0.55, 0.65, 0.8) * rim * 0.9 * occ;
+    // The eyes light the face around them.
+    col += alb * eyeLin * exp(-h.z * 18.0) * 0.45;
+    vec3 hal = normalize(L - rd);
+    col += pow(clamp(dot(n, hal), 0.0, 1.0), 140.0) * 0.9 * sh;
+    col = mix(col, studio(reflect(rd, n)) * occ, 0.025 + 0.45 * fre);
+  } else {
+    // The eyes: glossy and lit from inside.
+    col = eyeLin * 1.15 + vec3(0.01);
+    vec3 hal = normalize(L - rd);
+    col += pow(clamp(dot(n, hal), 0.0, 1.0), 160.0) * 2.0;
+    col = mix(col, studio(reflect(rd, n)), 0.03 + 0.3 * fre);
+  }
+  col += eyeLin * glow * 0.6;
+  return pow(aces(col), vec3(1.0 / 2.2));
+}
+
+void main() {
+  vec3 c = vec3(0.0);
+  if (uAA > 1.5) {
+    for (int j = 0; j < 2; j++) for (int i = 0; i < 2; i++) c += render(gl_FragCoord.xy + (vec2(float(i), float(j)) - 0.5) * 0.5);
+    c /= 4.0;
+  } else c = render(gl_FragCoord.xy);
+  gl_FragColor = vec4(c, 1.0);
+}
+</script>
+<script>
+// State colours are DESIGN.md's: Focus #7CE38B, Drift #FFB25E, Writing #C9A6FF, Break white, Session done #7CE38B.
+const hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255);
+const STATES = {
+  idle:    { eye: [1, 0, 0, 0],      col: '#F5F6F8', tint: '#B4BAC4', body: [0, 1, 0, 0] },
+  focus:   { eye: [0.42, 0, 0, -0.7], col: '#7CE38B', tint: '#7CE38B', body: [0, 0.97, 0, 0] },
+  writing: { eye: [0.9, 0, 0.9, 0.8], col: '#C9A6FF', tint: '#C9A6FF', body: [-0.06, 1, -0.6, 0] },
+  drift:   { eye: [1.15, 0, -1, 0.2], col: '#FFB25E', tint: '#FFB25E', body: [0.09, 1, 0.7, 0] },
+  break:   { eye: [1, 2, 0, -0.3],    col: '#F5F6F8', tint: '#B4BAC4', body: [0, 0.9, 0.9, 0] },
+  done:    { eye: [1, 1, 0, 0.2],     col: '#7CE38B', tint: '#7CE38B', body: [0, 1.04, -0.35, 0] },
+};
+const NAMES = Object.keys(STATES);
+const KINDS = [
+  { name: 'Drop', cam: [0.42, 0.2, 3.5], target: [0.02, 0.52, 0] },
+  { name: 'Curl', cam: [0.42, 0.2, 3.5], target: [0.04, 0.52, 0] },
+  { name: 'Squat', cam: [0.42, 0.22, 3.5], target: [0.0, 0.46, 0] },
+];
+
+const gl = document.createElement('canvas').getContext('webgl', { preserveDrawingBuffer: true, antialias: false });
+const prog = (() => {
+  const vs = gl.createShader(gl.VERTEX_SHADER); gl.shaderSource(vs, 'attribute vec2 a; void main(){ gl_Position = vec4(a, 0.0, 1.0); }'); gl.compileShader(vs);
+  const fs = gl.createShader(gl.FRAGMENT_SHADER); gl.shaderSource(fs, document.getElementById('fs').textContent); gl.compileShader(fs);
+  if (!gl.getShaderParameter(fs, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(fs));
+  const p = gl.createProgram(); gl.attachShader(p, vs); gl.attachShader(p, fs); gl.linkProgram(p); gl.useProgram(p);
+  const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+  const a = gl.getAttribLocation(p, 'a'); gl.enableVertexAttribArray(a); gl.vertexAttribPointer(a, 2, gl.FLOAT, false, 0, 0);
+  return p;
+})();
+const U = {}; ['uRes', 'uCam', 'uTarget', 'uAA', 'uVariant', 'uEyeCol', 'uTint', 'uEye', 'uBody'].forEach(n => U[n] = gl.getUniformLocation(prog, n));
+function draw(target, kind, s, opt = {}) {
+  const k = KINDS[kind], size = target.width;
+  gl.canvas.width = gl.canvas.height = size; gl.viewport(0, 0, size, size);
+  gl.uniform2f(U.uRes, size, size);
+  gl.uniform3f(U.uCam, k.cam[0], k.cam[1], k.cam[2] / (opt.zoom || 1));
+  gl.uniform3f(U.uTarget, ...k.target);
+  gl.uniform1f(U.uAA, opt.aa || 2);
+  gl.uniform1f(U.uVariant, kind);
+  gl.uniform3f(U.uEyeCol, ...hex(s.col));
+  gl.uniform3f(U.uTint, ...hex(s.tint));
+  gl.uniform4f(U.uEye, ...s.eye);
+  gl.uniform4f(U.uBody, ...s.body);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+  target.getContext('2d').drawImage(gl.canvas, 0, 0);
+}
+const canvas = (px, cls) => { const c = document.createElement('canvas'); c.width = c.height = px; if (cls) c.className = cls; return c; };
+
+const grid = document.getElementById('grid'), heroes = [];
+KINDS.forEach((k, i) => {
+  const art = document.createElement('article');
+  art.innerHTML = `<h2><span>${i + 1}</span>${k.name}</h2>`;
+  const hero = canvas(720, 'hero'); hero.setAttribute('role', 'img'); hero.setAttribute('aria-label', `${k.name}, idle`);
+  art.append(hero); heroes.push(hero);
+  const row = document.createElement('div'); row.className = 'states';
+  NAMES.forEach(n => { const f = document.createElement('figure'); const c = canvas(180); c.setAttribute('role', 'img'); c.setAttribute('aria-label', `${k.name}, ${n}`); f.append(c); f.insertAdjacentHTML('beforeend', `<figcaption>${n}</figcaption>`); row.append(f); draw(c, i, STATES[n]); });
+  art.append(row);
+  const isl = document.createElement('div'); isl.className = 'island'; isl.setAttribute('aria-label', `${k.name} at notch size`);
+  const ears = document.createElement('div'); ears.className = 'ears';
+  const first = canvas(48); draw(first, i, STATES.idle, { zoom: 1.2 }); isl.append(first);
+  NAMES.forEach(n => { const c = canvas(48); draw(c, i, STATES[n], { zoom: 1.2 }); ears.append(c); });
+  isl.append(ears); art.append(isl);
+  grid.append(art);
+  draw(hero, i, STATES[new URLSearchParams(location.search).get('state')] || STATES.idle);
+});
+
+// Alive, not looping: the heroes blink and glance at random times, and the tip of the drop follows with a spring.
+if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  const live = heroes.map(() => ({ look: 0, lookV: 0, lookT: 0, tip: 0, tipV: 0, blinkUntil: 0, nextBlink: 1500 + Math.random() * 3000, nextGlance: 2000 + Math.random() * 3000 }));
+  let last = 0;
+  const tick = now => {
+    requestAnimationFrame(tick);
+    if (now - last < 40 || document.hidden) return; last = now;
+    heroes.forEach((hero, i) => {
+      const m = live[i];
+      if (now > m.nextBlink) { m.blinkUntil = now + 130; m.nextBlink = now + 2200 + Math.random() * 4500; }
+      if (now > m.nextGlance) { m.lookT = Math.random() < 0.35 ? 0 : Math.random() * 1.6 - 0.8; m.nextGlance = now + 1500 + Math.random() * 3000; }
+      m.lookV += (m.lookT - m.look) * 0.18 - m.lookV * 0.35; m.look += m.lookV;
+      m.tipV += (-m.look * 0.5 - m.tip) * 0.08 - m.tipV * 0.12; m.tip += m.tipV;
+      const s = { ...STATES.idle, eye: [1, 0, m.look, 0], body: [m.look * -0.02, 1, m.tip, now < m.blinkUntil ? 1 : 0] };
+      draw(hero, i, s, { aa: 1 });
+    });
+  };
+  requestAnimationFrame(tick);
+}
+</script>
+</body>
+</html>

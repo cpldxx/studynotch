@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Abstract 3D creatures</title>
+<meta name="description" content="Eight abstract 3D mascot candidates in an Apple-like spirit, each alive in its own way: an orb of light, armillary rings, a ribbon, cubes, a cloud of dots, floating plates, sound bars and a helix.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hahmlet:wght@700&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
+<style>
+/* Colours are DESIGN.md's tokens: ink, paper, highlighter, pen blue, the state colours and the course highlighters. */
+:root { --paper: #FFFFFF; --desk: #EDF0F3; --ink: #14233B; --graphite: #566173; --rule: #D5DBE3; --hl: #FFE94A; color-scheme: light; }
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 400 16px/1.65 "IBM Plex Sans KR", -apple-system, "Apple SD Gothic Neo", sans-serif; word-break: keep-all; -webkit-font-smoothing: antialiased; }
+.wrap { width: min(1264px, 100%); margin-inline: auto; padding-inline: 24px; }
+@media (max-width: 560px) { .wrap { padding-inline: 16px; } }
+header { padding-block: 48px 20px; display: grid; gap: 14px; }
+h1 { margin: 0; font: 700 clamp(30px, 4vw, 46px)/1.2 "Hahmlet", serif; letter-spacing: -.02em; }
+header > p { margin: 0; color: var(--graphite); max-width: 48em; }
+:focus-visible { outline: 2px solid #1F4FD8; outline-offset: 3px; border-radius: 6px; }
+.pick { display: grid; gap: 6px; padding: 20px 24px; border: 1px solid var(--ink); border-radius: 14px; }
+.pick h2 { margin: 0; font: 700 20px/1.35 "Hahmlet", serif; }
+.pick p { margin: 0; color: var(--graphite); font-size: 15px; max-width: 62em; }
+.bar { position: sticky; top: 0; z-index: 10; background: var(--paper); padding-block: 14px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; border-bottom: 1px solid var(--rule); }
+.bar span { color: var(--graphite); font-size: 14.5px; margin-right: 6px; }
+.state { min-height: 44px; padding: 0 16px; border: 1px solid var(--rule); border-radius: 10px; background: var(--paper); color: var(--ink); font: 500 15px/1 inherit; font-family: inherit; cursor: pointer; transition: background-color .15s, border-color .15s, color .15s; }
+.state[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: #fff; }
+@media (hover: hover) and (pointer: fine) { .state:hover { border-color: var(--ink); } }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 282px), 1fr)); gap: 18px; padding-block: 22px 40px; }
+.card { margin: 0; border: 1px solid var(--rule); border-radius: 16px; overflow: hidden; display: grid; grid-template-rows: auto 1fr; }
+/* The stage is black like the notch: these live there, and glow reads best on black. */
+.plate { position: relative; height: 280px; background: radial-gradient(70% 60% at 50% 78%, #15181D, #000 70%); display: grid; place-items: center; overflow: hidden; --h: 150px; }
+.plate .m.big { margin-top: 46px; }
+.notch { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 236px; height: 32px; background: #000; border-radius: 0 0 12px 12px; z-index: 2; box-shadow: 0 0 0 1px rgba(255,255,255,.08);
+  display: flex; align-items: center; justify-content: space-between; color: #F5F6F8; font: 600 12px/1 -apple-system, BlinkMacSystemFont, sans-serif; font-variant-numeric: tabular-nums; }
+.ear { width: 76px; height: 32px; display: inline-flex; align-items: center; justify-content: center; }
+.card figcaption { padding: 16px 18px 20px; display: grid; gap: 8px; align-content: start; }
+.card h3 { margin: 0; font: 700 18px/1.35 "Hahmlet", serif; display: flex; gap: 10px; align-items: baseline; }
+.card h3 b { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--ink); color: #fff; font: 600 12px/1 "IBM Plex Sans KR", sans-serif; flex: none; transform: translateY(-2px); }
+.card dl { margin: 0; display: grid; grid-template-columns: 6.6em 1fr; gap: 5px 10px; font-size: 14.5px; line-height: 1.55; }
+.card dt { color: var(--graphite); }
+.card dd { margin: 0; }
+footer { padding-block: 8px 64px; color: var(--graphite); font-size: 14px; max-width: 62em; }
+
+/* ---------- 3D engine. 1em is the size unit. */
+.m { position: relative; display: inline-block; flex: none; font-size: var(--h); line-height: 1; padding: 0; margin: 0; border: 0; background: none; color: #F5F6F8;
+  cursor: grab; touch-action: pan-y; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;
+  --c1: #7CC8FF; --c2: #A5B4FF; --acc: #FFE94A; }
+.m[data-state="focus"] { --c1: #6EE0CF; --c2: #7CE38B; }
+.m[data-state="think"] { --c1: #C9A6FF; --c2: #FF9EC4; }
+.m[data-state="drift"] { --c1: #FFB25E; --c2: #FFB89A; --acc: #FFB25E; }
+.m[data-state="sleep"] { --c1: #8E939C; --c2: #566173; }
+.m.held { cursor: grabbing; }
+.m:focus-visible { outline: 2px solid #FFE94A; outline-offset: 10px; border-radius: 14px; }
+.m .sh { position: absolute; left: 0; right: 0; bottom: -.1em; height: .16em; border-radius: 50%; background: radial-gradient(closest-side, color-mix(in srgb, var(--c1) 30%, transparent), transparent); pointer-events: none; transition: background .5s; }
+.m .rig { position: absolute; inset: 0; perspective: 4.4em; transform-origin: 50% 100%; }
+.m .body { position: absolute; inset: 0; transform-style: preserve-3d; transform: rotateX(12deg) rotateY(-24deg); }
+.m .pl { position: absolute; left: 50%; top: 50%; display: block; backface-visibility: hidden; }
+.m .pl.two { backface-visibility: visible; }
+.m .part { position: absolute; left: 50%; top: 50%; width: 0; height: 0; transform-style: preserve-3d; }
+.m.tiny { cursor: default; pointer-events: none; }
+.m.tiny .sh { display: none; }
+@media (prefers-reduced-motion: no-preference) {
+  .m.seen:not(.tiny) .rig { animation: breathe 4.6s ease-in-out infinite; }
+  .m.hop .rig { animation: hop .62s both; }
+  .m:active:not(.held):not(.hop) .rig { animation: none; transform: scale(1.05, .94); transition: transform .1s cubic-bezier(.23, 1, .32, 1); }
+  @keyframes breathe { 50% { transform: scale(1.015); } }
+  @keyframes hop { 0% { transform: scale(1.06, .9); } 36% { transform: translateY(-.2em) scale(.97, 1.04); } 64% { transform: translateY(0) scale(1.04, .95); } 100% { transform: none; } }
+}
+/* Colours fade when the state changes. */
+.m .pl { transition: background-color .5s, opacity .5s; }
+
+/* 1. Orb: glowing discs that ripple in turn. */
+.m .od { background: radial-gradient(closest-side, color-mix(in srgb, var(--c1) 92%, #fff), color-mix(in srgb, var(--c2) 70%, transparent) 70%, transparent); opacity: .42; border-radius: 50%;
+  animation: ripple 3.2s ease-in-out infinite; animation-delay: calc(var(--i) * -.29s); }
+@keyframes ripple { 50% { scale: 1.07; } }
+.m[data-state="think"] .od { animation-duration: .9s; opacity: .55; }
+.m[data-state="focus"] .od { animation-duration: 5s; }
+.m[data-state="drift"] .od { animation-duration: 1.4s; }
+.m[data-state="sleep"] .od { opacity: .18; animation-duration: 7s; }
+.m .ocore { background: radial-gradient(closest-side, #fff, color-mix(in srgb, var(--c1) 60%, transparent) 60%, transparent); border-radius: 50%; }
+
+/* 2. Rings: an armillary sphere. Each ring spins on its own axis; the outer one shows progress in highlighter. */
+.m .ring { border-radius: 50%; background: conic-gradient(var(--acc) 0 var(--p, 0%), color-mix(in srgb, #fff 78%, var(--c1)) var(--p, 0%) 100%);
+  -webkit-mask: radial-gradient(closest-side, transparent calc(100% - .028em), #000 calc(100% - .027em)); mask: radial-gradient(closest-side, transparent calc(100% - .028em), #000 calc(100% - .027em)); }
+.m .ra { animation: spinA 11s linear infinite; }
+.m .rb { animation: spinB 15s linear infinite; }
+.m .rc { animation: spinC 19s linear infinite; }
+@keyframes spinA { from { transform: rotateY(0) rotateX(72deg); } to { transform: rotateY(360deg) rotateX(72deg); } }
+@keyframes spinB { from { transform: rotateZ(58deg) rotateX(0); } to { transform: rotateZ(58deg) rotateX(360deg); } }
+@keyframes spinC { from { transform: rotateZ(-50deg) rotateY(0); } to { transform: rotateZ(-50deg) rotateY(360deg); } }
+.m[data-state="think"] .ra { animation-duration: 2.4s; } .m[data-state="think"] .rb { animation-duration: 3.2s; } .m[data-state="think"] .rc { animation-duration: 4s; }
+.m[data-state="focus"] .ra, .m[data-state="focus"] .rb, .m[data-state="focus"] .rc { animation-duration: 30s; }
+.m[data-state="focus"] .ring.outer { --p: 62%; }
+.m[data-state="drift"] .rb { animation: wobbleB 1.8s ease-in-out infinite; }
+@keyframes wobbleB { 0%, 100% { transform: rotateZ(40deg) rotateX(20deg); } 50% { transform: rotateZ(75deg) rotateX(-25deg); } }
+.m[data-state="sleep"] .ra, .m[data-state="sleep"] .rb, .m[data-state="sleep"] .rc { animation-play-state: paused; opacity: .45; }
+
+/* 3. Ribbon: two-coloured slats placed every frame. */
+/* 4. Cubes, 5. dots, 7. pills, 8. helix: positions set every frame. */
+.m .dot { border-radius: 50%; background: color-mix(in srgb, #fff 80%, var(--c1)); }
+.m .dot.hi { background: var(--acc); }
+.m .bead { border-radius: 50%; }
+.m .pill { border-radius: 999px; background: linear-gradient(to bottom, color-mix(in srgb, var(--c1) 90%, #fff), var(--c2)); }
+
+/* 6. Layers: glass-like plates. */
+.m .plate3 { border-radius: .09em; box-shadow: inset 0 0 0 .006em rgba(255, 255, 255, .25); }
+
+@media (prefers-reduced-motion: reduce) { .m * { animation: none !important; } }
+
+/* Inside the gallery (index.html), the sheet shows only its candidates. */
+.embed body > header, .embed .bar, .embed body > footer { display: none; }
+.embed .grid { padding-block: 4px 8px; }
+.embed .wrap { padding-inline: 0; }
+</style>
+</head>
+<body>
+<header class="wrap">
+  <h1>Abstract and alive: eight 3D creatures</h1>
+  <p>No objects and no faces: these live through shape, light and motion alone, borrowing the language of Apple’s glowing orb, activity rings, wallpaper ribbons and layered plates. Each one breathes, turns toward your pointer, leans in when you come close, looks around on its own when you stop moving, hops when pressed and spins when dragged. The state buttons change colour and behaviour together.</p>
+  <div class="pick">
+    <h2>Pick: ② Armillary rings, coloured by ③ the highlighter ribbon</h2>
+    <p>The research points to the rings: flat circles are the cheapest shape to build in both SwiftUI and CSS 3D, they still read as one or two rings and a core of light at 20px, and with no eyes there is no face to resemble anyone else’s character. They recall both Apple’s activity rings and an old armillary sphere, so the Apple feel and the academic feel share one shape, and the outer ring doubles as the progress indicator. The ribbon is better as the rings’ colour or trail than on its own.</p>
+  </div>
+</header>
+<div class="bar wrap" role="group" aria-label="Change the state">
+  <span>All at once:</span>
+  <button type="button" class="state" aria-pressed="true" data-state="rest">Rest</button>
+  <button type="button" class="state" aria-pressed="false" data-state="focus">Focus</button>
+  <button type="button" class="state" aria-pressed="false" data-state="think">Answering</button>
+  <button type="button" class="state" aria-pressed="false" data-state="drift">Drift</button>
+  <button type="button" class="state" aria-pressed="false" data-state="sleep">Break</button>
+</div>
+<main class="wrap grid" id="grid"></main>
+<footer class="wrap">Drafts. DESIGN.md currently rules out gradients and glass effects on the web; choosing this direction means making an exception for the mascot first. The motion only shows when this file is open.</footer>
+
+<script>
+(function () {
+  'use strict';
+  var INK = '#14233B', PEN = '#1F4FD8', HL = '#FFE94A', PERI = '#A5B4FF', SKY = '#7CC8FF';
+  var still = window.matchMedia('(prefers-reduced-motion: reduce)');
+  function E(v) { return (Math.round(v * 10000) / 10000) + 'em'; }
+  function T(x, y, z) { return 'translate3d(' + E(x || 0) + ',' + E(y || 0) + ',' + E(z || 0) + ') '; }
+  function mix(c, p) {
+    if (!p) return c;
+    return p > 0 ? 'color-mix(in srgb,' + c + ' ' + (100 - p) + '%,' + INK + ')' : 'color-mix(in srgb,' + c + ' ' + (100 + p) + '%,#fff)';
+  }
+  function P(o) {
+    var mt = o.mt != null ? o.mt : -o.h / 2, ml = o.ml != null ? o.ml : -o.w / 2;
+    return '<i class="pl' + (o.cls ? ' ' + o.cls : '') + '" style="width:' + E(o.w) + ';height:' + E(o.h) + ';margin:' + E(mt) + ' 0 0 ' + E(ml) + ';' +
+      (o.t ? 'transform:' + o.t + ';' : '') + (o.bg ? 'background:' + o.bg + ';' : '') + (o.css || '') + '">' + (o.html || '') + '</i>';
+  }
+  function part(cls, t, html, css) { return '<b class="part' + (cls ? ' ' + cls : '') + '" style="' + (t ? 'transform:' + t + ';' : '') + (css || '') + '">' + html + '</b>'; }
+  var SHADE = { front: 0, back: 24, right: 16, left: 7, top: -10, bottom: 30 };
+  function box(o) {
+    var w = o.w, h = o.h, d = o.d, out = '';
+    var sides = {
+      front: [w, h, 'translateZ(' + E(d / 2) + ')'], back: [w, h, 'rotateY(180deg) translateZ(' + E(d / 2) + ')'],
+      right: [d, h, 'rotateY(90deg) translateZ(' + E(w / 2) + ')'], left: [d, h, 'rotateY(-90deg) translateZ(' + E(w / 2) + ')'],
+      top: [w, d, 'rotateX(90deg) translateZ(' + E(h / 2) + ')'], bottom: [w, d, 'rotateX(-90deg) translateZ(' + E(h / 2) + ')']
+    };
+    Object.keys(sides).forEach(function (k) {
+      var s = sides[k];
+      out += P({ w: s[0], h: s[1], t: s[2], bg: mix(o.c, SHADE[k]), css: o.r ? 'border-radius:' + E(o.r) : '' });
+    });
+    return out;
+  }
+  function clamp(v, lo, hi) { return v < lo ? lo : v > hi ? hi : v; }
+  // Ease every placed piece toward its target so state changes glide.
+  function glide(m, key, targets, dt, speed) {
+    var cur = m[key] || (m[key] = targets.map(function (t) { return t.slice(); }));
+    var k = still.matches ? 1 : 1 - Math.exp(-dt * (speed || 7));
+    for (var i = 0; i < targets.length; i++) for (var j = 0; j < targets[i].length; j++) cur[i][j] += (targets[i][j] - cur[i][j]) * k;
+    return cur;
+  }
+
+  var KINDS = [
+    { id: 'orb', name: 'Orb of light', w: .9, h: .9,
+      life: 'A sphere of eleven glowing discs. They swell one after another, so each breath travels from the core outward.',
+      states: 'Sky blue at rest; mint and very slow in focus; violet to pink and rippling fast while answering; amber when drifting; faint grey on a break.',
+      fit: 'Closest to Apple’s glowing orb, and for the same reason the least our own. Its colours must stay away from Siri’s.',
+      build: function () {
+        var out = '', k = 11;
+        for (var i = 0; i < k; i++) {
+          var u = -1 + (2 * i + 1) / k, rr = .4 * Math.sqrt(1 - u * u);
+          out += part('', 'translateZ(' + E(u * .4) + ')', P({ cls: 'two od', w: 2 * rr, h: 2 * rr, css: '--i:' + i }));
+        }
+        out += part('', 'rotateY(90deg)', P({ cls: 'two od', w: .76, h: .76, css: '--i:4' }));
+        out += part('', 'rotateX(90deg)', P({ cls: 'two od', w: .76, h: .76, css: '--i:7' }));
+        return out + P({ cls: 'ocore', w: .26, h: .26 });
+      } },
+    { id: 'rings', name: 'Armillary rings', w: .96, h: .96,
+      life: 'Three rings, each turning on its own axis, around a single highlighter bead.',
+      states: 'In focus they slow right down and the outer ring fills with highlighter as progress. Answering, they spin fast; drifting, one ring wobbles off its axis; on a break they stop and fade.',
+      fit: 'Recalls Apple’s activity rings and an old astronomical instrument at once. The outer ring is the progress indicator. The research’s first choice.',
+      build: function () {
+        var ring = function (cls, d, extra) { return part(cls, '', P({ cls: 'two ring ' + (extra || ''), w: d, h: d })); };
+        var core = '';
+        for (var i = 0; i < 5; i++) { var u = -1 + (2 * i + 1) / 5, rr = .07 * Math.sqrt(1 - u * u); core += P({ cls: 'two', w: 2 * rr, h: 2 * rr, t: 'translateZ(' + E(u * .07) + ')', bg: 'var(--acc)', css: 'border-radius:50%' }); }
+        return ring('ra', .9, 'outer') + ring('rb', .72) + ring('rc', .56) + core;
+      } },
+    { id: 'ribbon', name: 'Highlighter ribbon', w: 1.0, h: .7, n: 36,
+      life: 'One highlighter stroke unrolled into a 3D band: highlighter yellow on the front, pen blue on the back. It ripples and slowly twists.',
+      states: 'In focus it straightens into a single underline; answering, waves run through it fast; drifting, its end curls up and turns amber; on a break it hangs slack.',
+      fit: 'Tied to the product’s highlight yet fully abstract. Thin curves blur at 20px, so it works best as the rings’ colour or trail.',
+      build: function () {
+        var out = '';
+        for (var i = 0; i < this.n; i++) out += '<b class="part slat">' + P({ w: .034, h: .2, bg: 'var(--acc)' }) + P({ w: .034, h: .2, t: 'rotateY(180deg)', bg: PEN }) + '</b>';
+        return out;
+      },
+      tick: function (m, t, dt) {
+        var n = this.n, s = m.state, tg = [];
+        for (var i = 0; i < n; i++) {
+          var u = i / (n - 1), x = -.46 + .92 * u, y, z, tw;
+          if (s === 'focus') { y = .02 * Math.sin(t * .8 + u * 4); z = 0; tw = 8 * Math.sin(t * .6 + u * 3); }
+          else if (s === 'think') { y = .12 * Math.sin(t * 5 - u * 7); z = .1 * Math.cos(t * 5 - u * 7); tw = 200 * u + 40 * Math.sin(t * 4 - u * 5); }
+          else if (s === 'drift') { var c = Math.max(0, u - .55) / .45; x -= .2 * c * c; y = .06 * Math.sin(t * 1.4 + u * 4) - .38 * c * c; z = .15 * c; tw = 160 * u + 90 * c + 20 * Math.sin(t * 3); }
+          else if (s === 'sleep') { y = .16 * Math.sin(Math.PI * u) + .01 * Math.sin(t * .8); z = 0; tw = 100 * u; }
+          else { y = .09 * Math.sin(t * 1.3 + u * 5); z = .08 * Math.cos(t * 1.3 + u * 5); tw = 180 * u + 30 * Math.sin(t * .9 + u * 2); }
+          tg.push([x, y, z, tw]);
+        }
+        var cur = glide(m, 'cur', tg, dt, 6);
+        m.slats = m.slats || m.el.querySelectorAll('.slat');
+        for (var j = 0; j < n; j++) m.slats[j].style.transform = 'translate3d(' + E(cur[j][0]) + ',' + E(cur[j][1]) + ',' + E(cur[j][2]) + ') rotateX(' + cur[j][3].toFixed(1) + 'deg)';
+        return !still.matches;
+      } },
+    { id: 'cubes', name: 'Eight cubes', w: .8, h: .8,
+      life: 'Seven ink cubes and one highlighter cube part and gather like breathing. The highlighter cube is you.',
+      states: 'In focus they lock together and go still; answering, the top layer turns; drifting, the highlighter cube turns amber and floats away from the group; on a break they settle down.',
+      fit: 'The simplest and most geometric. “Drifting means leaving the group” shows without a word.',
+      build: function () {
+        var out = '';
+        for (var i = 0; i < 8; i++) out += '<b class="part cube">' + box({ w: .2, h: .2, d: .2, c: i === 7 ? 'var(--acc)' : (i % 2 ? '#2A3550' : INK), r: .02 }) + '</b>';
+        return out;
+      },
+      tick: function (m, t, dt) {
+        var s = m.state, tg = [], g = s === 'focus' ? .006 : s === 'sleep' ? .0 : .025 + .03 * (.5 + .5 * Math.sin(t * 1.4));
+        var spin = s === 'think' ? t * 2.2 : 0, h = .105 + g;
+        for (var i = 0; i < 8; i++) {
+          var sx = i & 1 ? 1 : -1, sy = i & 2 ? 1 : -1, sz = i & 4 ? 1 : -1, x = sx * h, y = sy * h, z = sz * h;
+          if (sy < 0 && spin) { var a = spin; var nx = x * Math.cos(a) - z * Math.sin(a), nz = x * Math.sin(a) + z * Math.cos(a); x = nx; z = nz; }
+          if (s === 'sleep') { y = sy < 0 ? .0 : .21; y += .06; }
+          if (i === 7 && s === 'drift') { x += .32 + .03 * Math.sin(t * 2); y -= .22 + .03 * Math.cos(t * 1.7); z += .1; }
+          tg.push([x, y, z]);
+        }
+        var cur = glide(m, 'cur', tg, dt, 5);
+        m.cubes = m.cubes || m.el.querySelectorAll('.cube');
+        for (var j = 0; j < 8; j++) m.cubes[j].style.transform = 'translate3d(' + E(cur[j][0]) + ',' + E(cur[j][1]) + ',' + E(cur[j][2]) + ')';
+        return !still.matches;
+      } },
+    { id: 'dots', name: 'Cloud of dots', w: .9, h: .9, n: 54,
+      life: 'Fifty-four dots form a slowly turning sphere; a few of them are highlighter.',
+      states: 'In focus they gather into one ring; answering, they swirl; drifting, they scatter and turn amber; on a break they settle into a low disc.',
+      fit: 'The most futuristic candidate, close to Apple’s intelligence visuals. At notch size it reads as glittering dust.',
+      build: function () {
+        var out = '';
+        for (var i = 0; i < this.n; i++) out += '<b class="part pt">' + P({ cls: 'two dot' + (i % 7 === 0 ? ' hi' : ''), w: i % 7 === 0 ? .05 : .034, h: i % 7 === 0 ? .05 : .034 }) + '</b>';
+        return out;
+      },
+      tick: function (m, t, dt) {
+        var n = this.n, s = m.state, tg = [], ga = Math.PI * (3 - Math.sqrt(5));
+        for (var i = 0; i < n; i++) {
+          var yy = 1 - (i / (n - 1)) * 2, rad = Math.sqrt(1 - yy * yy), th = ga * i, x, y, z;
+          var spin = t * (s === 'think' ? 1.6 : .25);
+          if (s === 'focus') { var a = i / n * Math.PI * 2 + t * .3; x = .38 * Math.cos(a); z = .38 * Math.sin(a); y = .015 * Math.sin(t * 2 + i); }
+          else if (s === 'sleep') { var b = i / n * Math.PI * 2 * 3; var rr = .1 + .3 * (i / n); x = rr * Math.cos(b); z = rr * Math.sin(b); y = .32; }
+          else {
+            var R = s === 'drift' ? .5 + .12 * Math.sin(i * 12.9 + t * 2) : .36;
+            var tw = s === 'think' ? Math.sin(t * 2 + yy * 3) * .8 : 0;
+            x = R * rad * Math.cos(th + spin + tw); z = R * rad * Math.sin(th + spin + tw); y = R * yy;
+          }
+          tg.push([x, y, z]);
+        }
+        var cur = glide(m, 'cur', tg, dt, 4);
+        m.pts = m.pts || m.el.querySelectorAll('.pt');
+        for (var j = 0; j < n; j++) m.pts[j].style.transform = 'translate3d(' + E(cur[j][0]) + ',' + E(cur[j][1]) + ',' + E(cur[j][2]) + ')';
+        return !still.matches;
+      } },
+    { id: 'layers', name: 'Floating plates', w: .8, h: .8,
+      life: 'Four translucent plates in ink, pen blue and periwinkle, the front one carrying a highlighter bar, float in a stack; the gaps open and close like breathing.',
+      states: 'In focus they press together; answering, a wave moves through the stack; drifting, the front plate slides out sideways; on a break they merge into one dim sheet.',
+      fit: 'Like the layered depth of Vision Pro and Mac icons; it also reads as stacked pages, with a touch of the academic.',
+      build: function () {
+        var cols = [INK, 'color-mix(in srgb,' + PEN + ' 78%, transparent)', 'color-mix(in srgb,' + PERI + ' 55%, transparent)', 'rgba(255,255,255,.14)'];
+        var out = '';
+        cols.forEach(function (c, i) {
+          out += '<b class="part lay">' + P({ cls: 'two plate3', w: .62, h: .62, bg: c,
+            html: i === 3 ? '<span style="position:absolute;left:18%;right:18%;top:56%;height:9%;border-radius:.02em;background:var(--acc)"></span><span style="position:absolute;left:18%;right:34%;top:38%;height:4%;border-radius:.02em;background:rgba(255,255,255,.5)"></span>' : '' }) + '</b>';
+        });
+        return out;
+      },
+      tick: function (m, t, dt) {
+        var s = m.state, tg = [];
+        for (var i = 0; i < 4; i++) {
+          var gap = s === 'focus' ? .025 : s === 'sleep' ? .008 : .085 + .03 * Math.sin(t * 1.2), z = (i - 1.5) * gap, x = 0, y = 0;
+          if (s === 'think') z += .05 * Math.sin(t * 4 - i * 1.2);
+          if (s === 'drift' && i === 3) { x = .3 + .02 * Math.sin(t * 2); y = -.06; z += .06; }
+          tg.push([x, y, z]);
+        }
+        var cur = glide(m, 'cur', tg, dt, 5);
+        m.lays = m.lays || m.el.querySelectorAll('.lay');
+        for (var j = 0; j < 4; j++) { m.lays[j].style.transform = 'translate3d(' + E(cur[j][0]) + ',' + E(cur[j][1]) + ',' + E(cur[j][2]) + ')'; m.lays[j].style.opacity = s === 'sleep' ? .55 : 1; }
+        return !still.matches;
+      } },
+    { id: 'pills', name: 'Sound bars', w: .8, h: .7, n: 5,
+      life: 'Five pill-shaped bars rise and fall as if speaking: a voice assistant’s waveform stood up in 3D.',
+      states: 'In focus they breathe low and even; answering, they ripple like speech; drifting, the rhythm tangles and turns amber; on a break they flatten into five dots.',
+      fit: 'Shows “an answer is being written” most clearly, but has almost no presence at rest.',
+      build: function () {
+        var out = '';
+        for (var i = 0; i < this.n; i++) {
+          var stack = '';
+          for (var k = 0; k < 4; k++) stack += P({ cls: 'two pill', w: .1, h: .1, t: 'translateZ(' + E(-.045 + k * .03) + ')' });
+          out += '<b class="part bar">' + stack + '</b>';
+        }
+        return out;
+      },
+      tick: function (m, t, dt) {
+        var n = this.n, s = m.state, tg = [];
+        for (var i = 0; i < n; i++) {
+          var c = 1 - Math.abs(i - 2) / 3, h;
+          if (s === 'think') h = .1 + .42 * c * (.5 + .5 * Math.sin(t * 7 + i * 1.3)) + .06 * Math.sin(t * 11 + i * 2.1);
+          else if (s === 'focus') h = .14 + .05 * c * (.5 + .5 * Math.sin(t * 1.4 + i * .7));
+          else if (s === 'drift') h = .1 + .3 * Math.abs(Math.sin(t * (2.3 + i * .9) + i * 4));
+          else if (s === 'sleep') h = .1;
+          else h = .12 + .2 * c * (.5 + .5 * Math.sin(t * 1.8 + i * .9));
+          tg.push([h]);
+        }
+        var cur = glide(m, 'cur', tg, dt, 10);
+        m.bars = m.bars || m.el.querySelectorAll('.bar');
+        for (var j = 0; j < n; j++) {
+          m.bars[j].style.transform = 'translate3d(' + E((j - 2) * .15) + ',0,0)';
+          var hh = Math.max(.1, cur[j][0]);
+          Array.prototype.forEach.call(m.bars[j].children, function (p) { p.style.height = E(hh); p.style.marginTop = E(-hh / 2); });
+        }
+        return !still.matches;
+      } },
+    { id: 'helix', name: 'Helix', w: .7, h: .96, n: 15,
+      life: 'Two strands of highlighter and white beads twist around each other and turn slowly: the structure of learning.',
+      states: 'In focus it turns very slowly and tightly; answering, it spins fast; drifting, the strands unwind and turn amber; on a break it sinks and stops.',
+      fit: 'Academic and Apple-tidy at once, though it may read as DNA from biology class.',
+      build: function () {
+        var out = '';
+        for (var i = 0; i < this.n * 2; i++) out += '<b class="part bd">' + P({ cls: 'two bead', w: .06, h: .06, bg: i % 2 ? 'var(--acc)' : 'color-mix(in srgb,#fff 82%, var(--c1))' }) + '</b>';
+        return out;
+      },
+      tick: function (m, t, dt) {
+        var n = this.n, s = m.state, tg = [], spin = t * (s === 'think' ? 3 : s === 'focus' ? .4 : s === 'sleep' ? 0 : .9);
+        for (var i = 0; i < n; i++) {
+          var u = i / (n - 1), y = s === 'sleep' ? .3 - .18 * (1 - u) * .4 : -.42 + .84 * u, R = s === 'drift' ? .18 + .22 * u + .03 * Math.sin(t * 2 + i) : s === 'focus' ? .14 : .19;
+          if (s === 'sleep') y = .36 - u * .2;
+          var a = u * Math.PI * (s === 'focus' ? 4 : 3) + spin;
+          for (var k = 0; k < 2; k++) { var b = a + k * Math.PI; tg.push([R * Math.cos(b), y, R * Math.sin(b)]); }
+        }
+        var cur = glide(m, 'cur', tg, dt, 5);
+        m.bds = m.bds || m.el.querySelectorAll('.bd');
+        for (var j = 0; j < tg.length; j++) m.bds[j].style.transform = 'translate3d(' + E(cur[j][0]) + ',' + E(cur[j][1]) + ',' + E(cur[j][2]) + ')';
+        return !still.matches;
+      } }
+  ];
+
+  // ---------- Frame loop and the creature shell (pointer turn, drag spin, press hop).
+  var jobs = [], raf = 0, last = 0, pointer = null, clock = 0;
+  function frame(now) {
+    var dt = Math.min(.034, Math.max(.001, (now - last) / 1000));
+    last = now; raf = 0; clock += dt;
+    var busy = false;
+    for (var i = 0; i < jobs.length; i++) if (jobs[i](dt)) busy = true;
+    if (busy) raf = requestAnimationFrame(frame);
+  }
+  function wake() { if (raf || document.hidden) return; last = performance.now() - 16; raf = requestAnimationFrame(frame); }
+  window.addEventListener('pointermove', function (e) { pointer = { x: e.clientX, y: e.clientY }; lastMove = performance.now(); wake(); }, { passive: true });
+  document.documentElement.addEventListener('pointerleave', function () { pointer = null; wake(); });
+  window.addEventListener('scroll', wake, { passive: true });
+  document.addEventListener('visibilitychange', wake);
+
+  // Life: when you stop moving, it looks around on its own (each at its own pace); when you come close, it leans in.
+  var lastMove = 0;
+  function life(m, resting) {
+    var idle = !pointer || performance.now() - lastMove > 2600, out = { follow: !idle && !m.tiny, near: 0, wx: 0, wy: 0, ex: 0, ey: 0 };
+    if (still.matches || resting) { out.follow = false; return out; }
+    if (!out.follow) {
+      var w = clock + m.seed;
+      out.wy = 17 * Math.sin(w * .33) + 6 * Math.sin(w * .91 + 1.3);
+      out.wx = 6 * Math.sin(w * .47 + .7);
+      out.ex = .7 * Math.sin(w * .33) + .25 * Math.sin(w * 1.7);
+      out.ey = .35 * Math.sin(w * .52 + 2);
+    } else {
+      var r = m.el.getBoundingClientRect(), d = Math.hypot(pointer.x - (r.left + r.width / 2), pointer.y - (r.top + r.height / 2));
+      out.near = clamp(1 - d / 320, 0, 1);
+    }
+    return out;
+  }
+  function spring(s, to, dt) {
+    s.v += ((to - s.x) * 110 - s.v * 13) * dt; s.x += s.v * dt;
+    if (Math.abs(to - s.x) < .06 && Math.abs(s.v) < .5) { s.x = to; s.v = 0; return false; }
+    return true;
+  }
+  function Thing(el, kind, tiny) {
+    var self = this;
+    this.el = el; this.kind = kind; this.state = 'rest'; this.seen = true; this.tiny = tiny;
+    this.pose = { x: 12, y: -24 }; this.spin = { x: 0, v: 0 }; this.spinTo = 0; this.drag = null; this.seed = Math.random() * 100;
+    el.innerHTML = '<span class="sh"></span><span class="rig"><span class="body">' + kind.build() + '</span></span>';
+    el.style.width = E(kind.w); el.style.height = E(kind.h);
+    el.setAttribute('data-kind', kind.id); el.setAttribute('data-state', 'rest');
+    this.body = el.querySelector('.body');
+    jobs.push(function (dt) { return self.step(dt); });
+    new IntersectionObserver(function (en) { self.seen = en[0].isIntersecting; el.classList.toggle('seen', self.seen); if (self.seen) wake(); }).observe(el);
+    if (tiny) return;
+    el.addEventListener('pointerdown', function (e) {
+      if (e.button) return;
+      self.drag = { id: e.pointerId, x: e.clientX, t: e.timeStamp, moved: 0, v: 0, held: false };
+      try { el.setPointerCapture(e.pointerId); } catch (err) { /* already gone */ }
+    });
+    el.addEventListener('pointermove', function (e) {
+      var d = self.drag;
+      if (!d || e.pointerId !== d.id || still.matches) return;
+      if (e.pointerType === 'mouse' && !(e.buttons & 1)) { release(e); return; }
+      var dx = e.clientX - d.x, dtt = Math.max(1, e.timeStamp - d.t);
+      d.moved += Math.abs(dx);
+      if (!d.held && d.moved > 6) { d.held = true; el.classList.add('held'); }
+      if (d.held) { self.spin.x += dx * .9; self.spin.v = 0; d.v = d.v * .6 + (dx * .9 / dtt * 1000) * .4; wake(); }
+      d.x = e.clientX; d.t = e.timeStamp;
+    });
+    function release(e) {
+      var d = self.drag;
+      if (!d || (e && e.pointerId !== d.id)) return;
+      self.drag = null; el.classList.remove('held');
+      if (!d.held) return;
+      self.dragged = true; setTimeout(function () { self.dragged = false; }, 80);
+      var v = clamp(d.v, -1400, 1400);
+      self.spin.v = v; self.spinTo = Math.round((self.spin.x + v * .3) / 360) * 360; wake();
+    }
+    el.addEventListener('pointerup', release);
+    el.addEventListener('pointercancel', release);
+    el.addEventListener('click', function (e) {
+      if (self.dragged) { e.preventDefault(); return; }
+      if (still.matches) return;
+      el.classList.add('hop');
+      if (self.spinTo - self.spin.x < 180) self.spinTo += 360;
+      wake();
+    });
+    el.addEventListener('animationend', function (e) { if (e.animationName === 'hop') el.classList.remove('hop'); });
+  }
+  Thing.prototype.setState = function (s) { this.state = s; this.el.setAttribute('data-state', s); wake(); };
+  Thing.prototype.step = function (dt) {
+    if (!this.seen) return false;
+    var busy = false, p = this.pose, held = this.drag && this.drag.held, tx = 12, ty = -24;
+    var L = life(this, held || this.state === 'sleep');
+    if (!L.follow) { ty += L.wy; tx += L.wx; if (!still.matches && !held && this.state !== 'sleep') busy = true; }
+    if (L.follow && !held) {
+      var r = this.el.getBoundingClientRect(), reach = Math.max(240, r.height * 2.2);
+      var nx = clamp((pointer.x - (r.left + r.width / 2)) / reach, -1, 1), ny = clamp((pointer.y - (r.top + r.height / 2)) / reach, -1, 1);
+      ty = -12 + nx * 32; tx = 10 - ny * 20;
+    }
+    p.s = p.s || 1;
+    if (still.matches) { p.x = tx; p.y = ty; p.s = 1; this.spin.x = this.spinTo = 0; }
+    else {
+      var k = 1 - Math.exp(-dt * 8);
+      p.x += (tx - p.x) * k; p.y += (ty - p.y) * k; p.s += ((1 + .07 * L.near) - p.s) * k;
+      if (Math.abs(tx - p.x) + Math.abs(ty - p.y) > .08) busy = true;
+      if (!held && spring(this.spin, this.spinTo, dt)) busy = true;
+      if (!busy && !held && this.spin.x !== 0) this.spin.x = this.spinTo = 0;
+    }
+    this.body.style.transform = 'scale(' + p.s.toFixed(3) + ') rotateX(' + p.x.toFixed(2) + 'deg) rotateY(' + (p.y + this.spin.x).toFixed(2) + 'deg)';
+    if (this.kind.tick && this.kind.tick(this, clock, dt)) busy = true;
+    return busy;
+  };
+
+  var grid = document.getElementById('grid'), all = [];
+  var RING = '<svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><circle cx="6" cy="6" r="5" fill="none" stroke="rgba(255,255,255,.18)" stroke-width="2"/><circle cx="6" cy="6" r="5" fill="none" stroke="#FFE94A" stroke-width="2" stroke-linecap="round" stroke-dasharray="11.3 31.4" transform="rotate(-90 6 6)"/></svg>';
+  KINDS.forEach(function (kind, i) {
+    var fig = document.createElement('figure');
+    fig.className = 'card';
+    fig.innerHTML = '<div class="plate"><div class="notch" aria-hidden="true"><span class="ear"><span class="m tiny"></span></span><span class="ear" style="gap:5px">' + RING + '33m</span></div>' +
+      '<button type="button" class="m big" aria-label="Candidate ' + (i + 1) + ', ' + kind.name + '. Press it to make it hop; drag it to spin it."></button></div>' +
+      '<figcaption><h3><b>' + (i + 1) + '</b>' + kind.name + '</h3><dl><dt>How it lives</dt><dd>' + kind.life + '</dd><dt>States</dt><dd>' + kind.states + '</dd><dt>Fit</dt><dd>' + kind.fit + '</dd></dl></figcaption>';
+    grid.appendChild(fig);
+    var tinyEl = fig.querySelector('.m.tiny');
+    tinyEl.style.fontSize = Math.min(22 / kind.h, 30 / kind.w).toFixed(2) + 'px';
+    all.push(new Thing(fig.querySelector('.m.big'), kind, false));
+    all.push(new Thing(tinyEl, kind, true));
+  });
+  wake();
+  var buttons = Array.prototype.slice.call(document.querySelectorAll('.state'));
+  buttons.forEach(function (b) {
+    b.addEventListener('click', function () {
+      buttons.forEach(function (o) { o.setAttribute('aria-pressed', o === b ? 'true' : 'false'); });
+      all.forEach(function (c) { c.setState(b.getAttribute('data-state')); });
+    });
+  });
+})();
+</script>
+<script>
+/* When this sheet sits inside the gallery (opened as file#embed): hide its own header and state bar, tell the gallery
+   its height, and take state changes from the gallery's one state bar. */
+(function () {
+  if (location.hash !== '#embed') return;
+  document.documentElement.classList.add('embed');
+  function send() { parent.postMessage({ sheetHeight: document.documentElement.scrollHeight }, '*'); }
+  window.addEventListener('load', send);
+  window.addEventListener('resize', send);
+  if ('ResizeObserver' in window) new ResizeObserver(send).observe(document.body);
+  window.addEventListener('message', function (e) {
+    var s = e.data && e.data.state;
+    if (!s) return;
+    var names = s === 'think' ? ['think', 'thinking'] : [s], button = null;
+    names.some(function (n) { button = document.querySelector('.state[data-state="' + n + '"], .mood[data-mood="' + n + '"]'); return !!button; });
+    if (button) button.click();
+  });
+})();
+</script>
+</body>
+</html>

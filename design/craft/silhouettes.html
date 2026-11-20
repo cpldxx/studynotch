@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mascot silhouettes</title>
+<style>
+  :root { --paper: #FFFFFF; --desk: #EDF0F3; --ink: #14233B; --graphite: #566173; }
+  body { margin: 0; padding: 32px 16px; background: var(--desk); color: var(--ink);
+    font: 14px/1.4 -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif; }
+  h1 { font-size: 20px; margin: 0 auto 20px; max-width: 1280px; }
+  .grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 10px; max-width: 1280px; margin: 0 auto; }
+  figure { margin: 0; background: var(--paper); border-radius: 12px; padding: 10px 10px 8px; display: grid;
+    grid-template-columns: 1fr auto; align-items: end; gap: 8px; }
+  figure svg.big { width: 100%; height: auto; display: block; }
+  .small { display: grid; gap: 4px; justify-items: center; }
+  .chip { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 6px; }
+  .chip.dark { background: #000; } .chip.light { background: var(--desk); }
+  .chip svg { width: 20px; height: 20px; display: block; }
+  figcaption { grid-column: 1 / -1; font-size: 12px; color: var(--graphite); }
+  @media (max-width: 760px) { .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+</style>
+</head>
+<body>
+<h1>Silhouettes</h1>
+<div class="grid" id="grid"></div>
+<script>
+// Every silhouette is a filled shape in a 64 × 64 box. No faces yet: a state has to read from the outline alone.
+const P = pts => 'M' + pts.map(p => p.map(n => +n.toFixed(2)).join(' ')).join(' L') + ' Z';
+const circ = (x, y, r) => `M${x - r} ${y} a${r} ${r} 0 1 0 ${2 * r} 0 a${r} ${r} 0 1 0 ${-2 * r} 0 Z`;
+const rr = (x, y, w, h, r) => `M${x + r} ${y} H${x + w - r} Q${x + w} ${y} ${x + w} ${y + r} V${y + h - r} Q${x + w} ${y + h} ${x + w - r} ${y + h} H${x + r} Q${x} ${y + h} ${x} ${y + h - r} V${y + r} Q${x} ${y} ${x + r} ${y} Z`;
+const rot = (pts, deg, cx = 32, cy = 32) => { const a = deg * Math.PI / 180, c = Math.cos(a), s = Math.sin(a);
+  return pts.map(([x, y]) => [cx + (x - cx) * c - (y - cy) * s, cy + (x - cx) * s + (y - cy) * c]); };
+const bar = (x1, y1, x2, y2, w) => { const dx = x2 - x1, dy = y2 - y1, l = Math.hypot(dx, dy), nx = -dy / l * w / 2, ny = dx / l * w / 2;
+  return P([[x1 + nx, y1 + ny], [x2 + nx, y2 + ny], [x2 - nx, y2 - ny], [x1 - nx, y1 - ny]]) + circ(x1, y1, w / 2) + circ(x2, y2, w / 2); };
+const chain = (f, n, r) => Array.from({ length: n }, (_, i) => { const [x, y, k = 1] = f(i / (n - 1)); return circ(x, y, r * k); }).join(' ');
+
+const families = {
+  'Dog-ear page': [
+    () => P([[16, 12], [40, 12], [48, 3], [46, 16], [48, 16], [48, 56], [16, 56]]),
+    () => P([[16, 10], [38, 10], [48, 20], [58, 22], [48, 30], [48, 56], [16, 56]]),
+    () => P([[16, 12], [40, 12], [48, 3], [46, 16], [48, 16], [48, 54], [24, 54], [14, 60], [16, 50]]),
+    () => P(rot([[18, 12], [40, 12], [48, 3], [46, 16], [48, 16], [46, 56], [14, 56]], -8)),
+    () => P([[20, 8], [44, 8], [52, 0], [50, 12], [52, 12], [52, 52], [20, 52]]) + P([[12, 16], [16, 16], [16, 58], [44, 58], [44, 60], [12, 60]]),
+    () => P([[16, 10], [40, 10], [48, 2], [46, 14], [48, 14], [48, 44], [16, 44]]) + rr(14, 42, 36, 14, 7),
+  ],
+  'Inchworm': [
+    () => chain(t => { const s = 2 * t - 1; return [32 + 22 * s * (0.45 + 0.55 * Math.abs(s)), 52 - 30 * Math.pow(1 - s * s, 0.7), t > 0.9 ? 1.15 : 1]; }, 16, 6),
+    () => chain(t => { const s = 2 * t - 1; return [32 + 24 * s, 50 - 12 * (1 - s * s), t > 0.9 ? 1.15 : 1]; }, 16, 6),
+    () => chain(t => [28 + 7 * Math.sin(Math.PI * 1.6 * t), 56 - 44 * t, t > 0.9 ? 1.15 : 1], 16, 6),
+    () => chain(t => [8 + 48 * t, t > 0.85 ? 48 - (t - 0.85) * 40 : 50, t > 0.9 ? 1.15 : 1], 16, 6),
+    () => chain(t => { if (t < 0.7) { const s = t / 0.7 * 2 - 1; return [24 + 16 * s, 52 - 22 * (1 - s * s)]; }
+      const u = (t - 0.7) / 0.3; return [40 + 10 * u, 52 - 26 * u, u > 0.6 ? 1.15 : 1]; }, 16, 6),
+    () => chain(t => { const a = Math.PI * (0.15 + 1.5 * t); return [32 + 18 * Math.cos(a), 34 - 18 * Math.sin(a), t > 0.9 ? 1.15 : 1]; }, 18, 5.5),
+  ],
+  'Page moth': [
+    () => P([[29, 22], [8, 12], [11, 44], [29, 50]]) + P([[35, 22], [56, 12], [53, 44], [35, 50]]) + rr(28, 18, 8, 36, 4),
+    () => P([[28, 30], [22, 4], [32, 4], [32, 40]]) + P([[36, 30], [42, 4], [32, 4], [32, 40]]) + rr(28, 26, 8, 30, 4),
+    () => P([[29, 24], [4, 22], [4, 42], [29, 44]]) + P([[35, 24], [60, 22], [60, 42], [35, 44]]) + rr(28, 18, 8, 34, 4),
+    () => P([[29, 24], [10, 6], [8, 34], [29, 46]]) + P([[35, 30], [58, 36], [50, 56], [35, 50]]) + rr(28, 18, 8, 36, 4),
+    () => P([[29, 22], [8, 12], [11, 44], [29, 50]]) + P([[35, 22], [56, 12], [53, 44], [35, 50]]) + P([[29, 26], [5, 18], [7, 48], [29, 52]]) + P([[35, 26], [59, 18], [57, 48], [35, 52]]) + rr(28, 18, 8, 36, 4),
+    () => P([[29, 26], [6, 30], [14, 52], [29, 48]]) + P([[35, 26], [58, 30], [50, 52], [35, 48]]) + rr(28, 14, 8, 40, 4) + P([[30, 16], [24, 6], [26, 5], [32, 14]]) + P([[34, 16], [40, 6], [38, 5], [32, 14]]),
+  ],
+  'Tassel': [
+    () => circ(32, 14, 7) + P([[29, 20], [35, 20], [35, 26], [29, 26]]) + P([[27, 26], [37, 26], [46, 56], [18, 56]]),
+    () => circ(30, 14, 7) + P([[27, 20], [33, 20], [34, 26], [28, 26]]) + P([[27, 26], [37, 26], [52, 52], [26, 58]]),
+    () => P([[29, 2], [35, 2], [36, 10], [28, 10]]) + circ(32, 16, 6) + P([[27, 24], [37, 24], [46, 56], [18, 56]]),
+    () => circ(32, 22, 8) + P([[24, 30], [40, 30], [50, 52], [14, 52]]),
+    () => circ(32, 10, 5) + P([[29, 14], [35, 14], [40, 60], [24, 60]]),
+    () => circ(32, 14, 7) + P([[26, 24], [38, 24], [40, 40], [31, 40]]) + P([[26, 38], [31, 38], [28, 58], [18, 58]]) + P([[33, 38], [38, 38], [46, 58], [36, 58]]),
+  ],
+  'Scroll snail': [
+    () => rr(8, 46, 50, 9, 4.5) + circ(28, 34, 14) + bar(52, 47, 52, 36, 8) + bar(50, 37, 47, 24, 3) + bar(54, 37, 58, 25, 3) + circ(47, 24, 2.6) + circ(58, 25, 2.6),
+    () => rr(10, 46, 40, 9, 4.5) + circ(28, 34, 14),
+    () => rr(4, 47, 58, 8, 4) + circ(24, 35, 13) + bar(56, 48, 58, 38, 7) + bar(57, 39, 62, 27, 3) + bar(59, 40, 64, 30, 3),
+    () => rr(8, 46, 50, 9, 4.5) + circ(28, 34, 14) + P([[28, 48], [44, 40], [46, 48]]) + bar(52, 47, 52, 36, 8) + bar(50, 37, 47, 24, 3) + bar(54, 37, 58, 25, 3),
+    () => rr(8, 46, 50, 9, 4.5) + circ(28, 34, 14) + bar(52, 47, 53, 36, 8) + bar(52, 37, 56, 23, 3) + bar(55, 38, 62, 28, 3) + circ(56, 23, 2.6) + circ(62, 28, 2.6),
+    () => rr(8, 46, 50, 9, 4.5) + circ(28, 34, 14) + bar(52, 47, 52, 36, 8) + bar(50, 37, 42, 28, 3) + bar(54, 37, 62, 32, 3),
+  ],
+  'Ribbon': [
+    () => P([[24, 4], [40, 4], [40, 58], [32, 50], [24, 58]]),
+    () => P([[24, 4], [40, 4], [40, 30], [50, 46], [44, 58], [38, 48], [30, 50], [26, 34], [24, 30]]),
+    () => 'M24 4 H40 C40 20 50 24 46 40 C44 50 44 54 44 60 L36 52 L28 58 C28 50 30 44 32 38 C36 24 24 22 24 4 Z',
+    () => P([[10, 8], [40, 8], [40, 58], [32, 50], [24, 58], [24, 18], [10, 18]]),
+    () => P([[18, 4], [30, 4], [30, 56], [24, 50], [18, 56]]) + P([[34, 8], [46, 8], [46, 60], [40, 54], [34, 60]]),
+    () => P([[18, 18], [46, 18], [46, 52], [32, 42], [18, 52]]),
+  ],
+  'Nib': [
+    () => 'M20 10 H44 V20 C44 34 36 46 32 60 C28 46 20 34 20 20 Z',
+    () => P(rot([[20, 10], [44, 10], [44, 20], [38, 40], [32, 60], [26, 40], [20, 20]], 25)),
+    () => 'M20 10 H44 V20 C44 34 36 46 32 60 C28 46 20 34 20 20 Z ' + 'M28.5 26 a3.5 3.5 0 1 1 7 0 a3.5 3.5 0 1 1 -7 0 Z',
+    () => 'M16 16 H48 V24 C48 36 38 46 32 56 C26 46 16 36 16 24 Z',
+    () => rr(22, 2, 20, 14, 5) + 'M20 14 H44 V22 C44 36 36 48 32 62 C28 48 20 36 20 22 Z',
+    () => 'M20 54 H44 V44 C44 30 36 18 32 4 C28 18 20 30 20 44 Z',
+  ],
+};
+
+const svg = (d, cls, fill) => `<svg class="${cls}" viewBox="0 0 64 64" aria-hidden="true"><path d="${d}" fill="${fill}"/></svg>`;
+const grid = document.getElementById('grid');
+const names = Object.keys(families);
+for (let row = 0; row < 6; row++) {
+  for (const fam of names) {
+    const d = families[fam][row]();
+    const id = fam.split(/[ -]/).map(w => w[0]).join('').toUpperCase() + (row + 1);
+    grid.insertAdjacentHTML('beforeend', `<figure>${svg(d, 'big', '#000')}
+      <div class="small"><span class="chip dark">${svg(d, '', '#fff')}</span><span class="chip light">${svg(d, '', '#000')}</span></div>
+      <figcaption>${id} · ${fam}</figcaption></figure>`);
+  }
+}
+</script>
+</body>
+</html>

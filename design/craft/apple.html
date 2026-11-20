@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mascot renders</title>
+<meta name="description" content="The three mascot candidates rendered in 3D with studio light, in code (WebGL, no libraries).">
+<style>
+  :root { --paper: #FFFFFF; --desk: #EDF0F3; --ink: #14233B; --graphite: #566173; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 40px 16px 48px; background: var(--paper); color: var(--ink);
+    font: 15px/1.4 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif; }
+  h1 { max-width: 1200px; margin: 0 auto 24px; font-size: 22px; font-weight: 650; letter-spacing: -0.01em; }
+  .grid { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  article { background: var(--desk); border-radius: 24px; padding: 20px; display: grid; gap: 14px; }
+  h2 { margin: 0; font-size: 17px; font-weight: 600; display: flex; gap: 10px; align-items: baseline; }
+  h2 span { color: var(--graphite); font-weight: 500; }
+  .hero { aspect-ratio: 1; width: 100%; display: block; border-radius: 16px; }
+  .states { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+  .states figure { margin: 0; display: grid; justify-items: center; gap: 2px; }
+  .states canvas { width: 100%; aspect-ratio: 1; display: block; border-radius: 10px; }
+  .states figcaption { font-size: 11px; color: var(--graphite); }
+  .island { background: #000; border-radius: 0 0 16px 16px; height: 34px; display: flex; align-items: center; justify-content: space-between; padding: 0 28px; }
+  .island canvas { width: 24px; height: 24px; display: block; }
+  .island .ears { display: flex; gap: 10px; }
+  @media (max-width: 900px) { .grid { grid-template-columns: minmax(0, 1fr); max-width: 460px; } }
+</style>
+</head>
+<body>
+<h1>Mascot renders</h1>
+<div class="grid" id="grid"></div>
+<script id="fs" type="x-shader/x-fragment">
+precision highp float;
+uniform vec2 uRes;
+uniform float uKind;      // 0 Inch, 1 Scroll, 2 Folio
+uniform vec4 uP[16];      // shape numbers for the current state
+uniform vec3 uCam;        // yaw, pitch, distance
+uniform vec3 uTarget;
+uniform vec3 uBg;         // backdrop, sRGB
+uniform float uAA;
+uniform float uDark;      // 1 when drawn on the black island
+
+const vec3 HI = vec3(1.0, 0.80, 0.07);      // highlighter #FFE94A, linear
+const vec3 INK = vec3(0.007, 0.017, 0.044); // ink #14233B, linear
+const vec3 PAPER = vec3(0.86, 0.87, 0.88);
+
+float smin(float a, float b, float k) { float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0); return mix(b, a, h) - k * h * (1.0 - h); }
+float sdSphere(vec3 p, float r) { return length(p) - r; }
+float sdCapsule(vec3 p, vec3 a, vec3 b, float r) { vec3 pa = p - a, ba = b - a; float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0); return length(pa - ba * h) - r; }
+float sdEllipsoid(vec3 p, vec3 r) { float k0 = length(p / r); float k1 = length(p / (r * r)); return k0 * (k0 - 1.0) / k1; }
+float sdRoundBox(vec3 p, vec3 b, float r) { vec3 q = abs(p) - b + r; return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0) - r; }
+
+// ---- 1 Inch: a highlighter-yellow inchworm, ten soft segments, a head, two glass eyes.
+vec2 inch(vec3 p) {
+  float d = 1e5;
+  for (int i = 0; i < 12; i++) d = smin(d, sdSphere(p - uP[i].xyz, uP[i].w), 0.09);
+  d = smin(d, sdSphere(p - uP[12].xyz, uP[12].w), 0.09);
+  vec2 r = vec2(d, 1.0);
+  float open = max(uP[15].x, 0.06);
+  float e = min(sdEllipsoid(p - uP[13].xyz, vec3(0.036, 0.062 * open, 0.032)), sdEllipsoid(p - uP[14].xyz, vec3(0.036, 0.062 * open, 0.032)));
+  if (e < r.x) r = vec2(e, 2.0);
+  return r;
+}
+
+// ---- 2 Scroll: a snail whose shell is a rolled sheet of paper.
+float scroll(vec3 q, float R, float halfW) {
+  float rr = length(q.xy);
+  float th = atan(q.y, q.x);
+  float b = 0.062, r0 = 0.04;
+  float t = (rr - r0) / b - th / 6.2831853;
+  float sheet = abs(fract(t) - 0.5) * b - (0.5 * b - 0.0055);
+  float d2 = max(sheet, rr - R);
+  d2 = max(d2, r0 * 0.7 - rr);
+  float dz = abs(q.z) - halfW;
+  return max(d2, dz);
+}
+vec2 snail(vec3 p) {
+  vec3 fp = p - vec3(0.0, uP[2].w, 0.0);
+  float foot = sdCapsule(vec3(fp.x, fp.y * 1.45, fp.z * 1.05), uP[2].xyz, uP[3].xyz, 0.13) / 1.45;
+  float body = smin(foot, sdCapsule(p, uP[3].xyz, uP[4].xyz, uP[4].w), 0.08);
+  if (uP[5].w > 0.0) {
+    body = smin(body, sdCapsule(p, uP[4].xyz + vec3(-0.03, 0.06, 0.0), uP[5].xyz, 0.03), 0.04);
+    body = smin(body, sdCapsule(p, uP[4].xyz + vec3(0.03, 0.06, 0.0), uP[6].xyz, 0.03), 0.04);
+    body = smin(body, sdSphere(p - uP[5].xyz, uP[5].w), 0.02);
+    body = smin(body, sdSphere(p - uP[6].xyz, uP[6].w), 0.02);
+  }
+  vec2 r = vec2(body, 1.0);
+  vec3 q = p - uP[0].xyz;
+  float a = uP[1].x; q.xy = mat2(cos(a), -sin(a), sin(a), cos(a)) * q.xy;
+  float sh = scroll(q, uP[0].w, 0.19);
+  if (sh < r.x) r = vec2(sh, 3.0);
+  if (uP[5].w > 0.0) {
+    float open = max(uP[15].x, 0.06);
+    float e = min(sdEllipsoid(p - uP[7].xyz, vec3(0.026, 0.036 * open, 0.022)), sdEllipsoid(p - uP[8].xyz, vec3(0.026, 0.036 * open, 0.022)));
+    if (e < r.x) r = vec2(e, 2.0);
+  }
+  return r;
+}
+
+// ---- 3 Folio: a moth whose wings are the two pages of a book.
+vec3 pageLocal(vec3 p, float a, float s) {
+  vec3 dir = vec3(s * cos(a), 0.0, -sin(a));
+  vec3 nrm = vec3(s * sin(a), 0.0, cos(a));
+  vec3 o = p - vec3(0.0, 0.0, -0.06);
+  float u = dot(o, dir), w = dot(o, nrm);
+  w -= 0.22 * u * u;                       // the page curls gently towards its edge
+  return vec3(u, o.y, w);
+}
+float page(vec3 l) {
+  float d = sdRoundBox(l - vec3(0.5, 0.26, 0.0), vec3(0.47, 0.4, 0.006), 0.005);
+  vec2 c = vec2(l.x, l.y) - vec2(0.58, -0.12);   // the lower outer corner is cut like a moth's wing
+  d = max(d, dot(c, normalize(vec2(0.62, -0.78))));
+  return d;
+}
+vec2 moth(vec3 p) {
+  float tilt = uP[0].z;
+  p.xy = mat2(cos(tilt), -sin(tilt), sin(tilt), cos(tilt)) * p.xy;
+  float b = sdEllipsoid(p - vec3(0.0, 0.30, 0.0), vec3(0.13, 0.17, 0.12));
+  b = smin(b, sdEllipsoid(p - vec3(0.0, 0.0, -0.02), vec3(0.09, 0.21, 0.09)), 0.06);
+  b = smin(b, sdSphere(p - vec3(0.0, 0.56, 0.04), 0.135), 0.05);
+  for (int i = 0; i < 2; i++) {
+    float s = i == 0 ? -1.0 : 1.0;
+    b = smin(b, sdCapsule(p, vec3(0.05 * s, 0.66, 0.07), vec3(0.15 * s, 0.86, 0.10), 0.013), 0.02);
+    b = min(b, sdCapsule(p, vec3(0.15 * s, 0.86, 0.10), vec3(0.24 * s, 0.95, 0.08), 0.013));
+    vec3 tp = p - vec3(0.265 * s, 0.975, 0.075);
+    tp.xy = mat2(0.8, -0.6 * s, 0.6 * s, 0.8) * tp.xy;
+    b = min(b, sdEllipsoid(tp, vec3(0.026, 0.075, 0.02)));
+  }
+  vec2 r = vec2(b, 1.0);
+  float pl = min(page(pageLocal(p, uP[0].x, -1.0)), page(pageLocal(p, uP[0].x + 0.09, -1.0)));
+  float pr = min(page(pageLocal(p, uP[0].y, 1.0)), page(pageLocal(p, uP[0].y + 0.09, 1.0)));
+  float pg = min(pl, pr);
+  if (pg < r.x) r = vec2(pg, 4.0);
+  float open = max(uP[0].w, 0.06);
+  float e = min(sdEllipsoid(p - vec3(-0.055, 0.575, 0.165), vec3(0.03, 0.048 * open, 0.026)), sdEllipsoid(p - vec3(0.055, 0.575, 0.165), vec3(0.03, 0.048 * open, 0.026)));
+  if (e < r.x) r = vec2(e, 2.0);
+  return r;
+}
+
+float groundY() { return uKind > 1.5 ? -0.42 : 0.0; }
+vec2 map(vec3 p) {
+  vec2 r = uKind < 0.5 ? inch(p) : (uKind < 1.5 ? snail(p) : moth(p));
+  float g = p.y - groundY();
+  if (g < r.x) r = vec2(g, 5.0);
+  return r;
+}
+vec3 normal(vec3 p) {
+  vec2 e = vec2(0.0007, 0.0);
+  return normalize(vec3(map(p + e.xyy).x - map(p - e.xyy).x, map(p + e.yxy).x - map(p - e.yxy).x, map(p + e.yyx).x - map(p - e.yyx).x));
+}
+float shadow(vec3 ro, vec3 rd) {
+  float res = 1.0, t = 0.02;
+  for (int i = 0; i < 64; i++) {
+    float h = map(ro + rd * t).x;
+    res = min(res, 4.5 * h / t);
+    t += clamp(h, 0.008, 0.12);
+    if (res < 0.002 || t > 3.0) break;
+  }
+  return clamp(res, 0.0, 1.0);
+}
+float occlusion(vec3 p, vec3 n) {
+  float occ = 0.0, sca = 1.0;
+  for (int i = 0; i < 6; i++) { float h = 0.012 + 0.16 * float(i) / 5.0; occ += (h - map(p + h * n).x) * sca; sca *= 0.86; }
+  return clamp(1.0 - 2.4 * occ, 0.0, 1.0);
+}
+// The studio: a soft grey sweep, a big softbox up and to the left, a thin strip light on the right.
+vec3 studio(vec3 r) {
+  vec3 c = mix(vec3(0.20, 0.21, 0.23), vec3(0.85, 0.87, 0.9), smoothstep(-0.3, 0.5, r.y));
+  c += vec3(5.0) * smoothstep(0.80, 0.93, dot(r, normalize(vec3(-0.55, 0.75, 0.45))));
+  c += vec3(2.2) * smoothstep(0.93, 0.985, dot(r, normalize(vec3(0.95, 0.25, -0.1))));
+  return c;
+}
+vec3 aces(vec3 x) { return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0); }
+
+vec3 inkLines(vec3 alb, vec3 p) {
+  // Printed lines on the pages, worked out in the page's own coordinates.
+  float tilt = uP[0].z;
+  vec3 q = p; q.xy = mat2(cos(tilt), -sin(tilt), sin(tilt), cos(tilt)) * q.xy;
+  vec3 l = pageLocal(q, uP[0].x, -1.0);
+  float pl = page(l);
+  vec3 l2 = pageLocal(q, uP[0].y, 1.0);
+  if (page(l2) < pl) l = l2;
+  float row = (0.52 - l.y) / 0.085;
+  float k = fract(row);
+  float line = smoothstep(0.30, 0.38, k) * (1.0 - smoothstep(0.58, 0.66, k));
+  float inRows = step(0.0, row) * step(row, 4.0);
+  float end = row > 3.0 ? 0.56 : 0.78;
+  float inCols = smoothstep(0.15, 0.17, l.x) * (1.0 - smoothstep(end - 0.02, end, l.x));
+  float gutter = 1.0 - 0.14 * (1.0 - smoothstep(0.0, 0.12, l.x));
+  return mix(alb, INK * 3.0, 0.55 * line * inRows * inCols) * gutter;
+}
+
+vec3 render(vec2 frag) {
+  vec2 uv = (2.0 * frag - uRes) / uRes.y;
+  float yaw = uCam.x, pitch = uCam.y;
+  vec3 ro = uTarget + uCam.z * vec3(sin(yaw) * cos(pitch), sin(pitch), cos(yaw) * cos(pitch));
+  vec3 fw = normalize(uTarget - ro), rt = normalize(cross(fw, vec3(0, 1, 0))), up = cross(rt, fw);
+  vec3 rd = normalize(fw * 3.6 + uv.x * rt + uv.y * up);
+  float t = 0.0; vec2 h = vec2(0.0);
+  bool hit = false;
+  for (int i = 0; i < 180; i++) {
+    h = map(ro + rd * t);
+    if (abs(h.x) < 0.0004 * t) { hit = true; break; }
+    t += h.x * 0.75;
+    if (t > 30.0) break;
+  }
+  vec3 bg = pow(uBg, vec3(2.2));
+  if (!hit) return uBg;
+  vec3 p = ro + rd * t, n = normal(p);
+  vec3 L = normalize(vec3(-0.2, 1.0, 0.3));
+  float sh = shadow(p + n * 0.003, L);
+  float occ = occlusion(p, n);
+  if (h.y > 2.5 && h.y < 3.5) occ = mix(1.0, occ, 0.55);
+  if (h.y > 4.5) {
+    // The floor only catches shadow and contact darkness, so it melts into the backdrop.
+    float fade = 1.0 - smoothstep(0.4, 1.4, length(p.xz - uTarget.xz));
+    float dark = (0.22 * (1.0 - sh) + 0.55 * (1.0 - occ)) * fade;
+    vec3 c = uBg * (1.0 - clamp(dark, 0.0, 0.6) * (uDark > 0.5 ? 0.0 : 1.0));
+    if (uP[15].y > 0.5 && abs(p.z) < 0.07 && p.x > uP[15].z && p.x < uP[15].w) c = mix(c, vec3(1.0, 0.914, 0.29), 0.62);
+    return c;
+  }
+  vec3 alb = h.y < 1.5 ? HI : (h.y < 2.5 ? vec3(0.004) : PAPER);
+  if (h.y > 3.5) alb = inkLines(alb, p);
+  float rough = h.y < 1.5 ? 0.45 : (h.y < 2.5 ? 0.04 : 0.6);
+  float wrap = h.y < 1.5 ? 0.45 : (h.y > 3.5 ? 0.5 : 0.25);
+  float dif = clamp((dot(n, L) + wrap) / (1.0 + wrap), 0.0, 1.0) * mix(1.0, sh, 0.9);
+  float sky = 0.5 + 0.5 * n.y;
+  float fill = clamp(dot(n, normalize(vec3(0.9, 0.25, 0.5))), 0.0, 1.0);
+  float fre = pow(clamp(1.0 + dot(n, rd), 0.0, 1.0), 5.0);
+  vec3 col = alb * (2.3 * dif * vec3(1.0, 0.97, 0.93) + 0.55 * sky * occ * vec3(0.92, 0.95, 1.0) + 0.35 * fill * occ);
+  // Subsurface glow at the thin edges of the soft body and the paper.
+  if (h.y < 1.5 || h.y > 2.5) col += alb * 0.35 * pow(clamp(dot(rd, L) * 0.5 + 0.5, 0.0, 1.0), 2.0) * occ;
+  vec3 hal = normalize(L - rd);
+  float spec = pow(clamp(dot(n, hal), 0.0, 1.0), mix(400.0, 18.0, rough)) * sh;
+  float f0 = h.y < 2.5 && h.y > 1.5 ? 0.06 : 0.035;
+  float fr = f0 + (1.0 - f0) * fre;
+  col += (1.0 - rough) * 2.0 * spec * vec3(1.0);
+  col = mix(col, studio(reflect(rd, n)) * occ, fr * (1.0 - rough * 0.85));
+  col = aces(col * 0.95);
+  return pow(col, vec3(1.0 / 2.2));
+}
+
+void main() {
+  vec3 c = vec3(0.0);
+  if (uAA > 1.5) {
+    for (int j = 0; j < 2; j++) for (int i = 0; i < 2; i++) c += render(gl_FragCoord.xy + (vec2(float(i), float(j)) - 0.5) * 0.5);
+    c /= 4.0;
+  } else c = render(gl_FragCoord.xy);
+  gl_FragColor = vec4(c, 1.0);
+}
+</script>
+<script>
+// ---------- Shape numbers per state (world units: the floor is y = 0, the creature is about 1.4 wide).
+const STATES = ['idle', 'focus', 'writing', 'drift', 'break'];
+const cub = (P, t) => { const u = 1 - t; return [0, 1].map(k => u * u * u * P[0][k] + 3 * u * u * t * P[1][k] + 3 * u * t * t * P[2][k] + t * t * t * P[3][k]); };
+// The inchworm's spine is the 2D curve from the flat drawing, turned into world units.
+const INCH = {
+  idle:    { c: [[62, 192], [50, 98], [202, 98], [190, 192]], lift: [13, -15], face: 1, open: 1 },
+  focus:   { c: [[96, 192], [40, 26], [218, 26], [162, 192]], lift: [12, -7], face: 1, open: 0.45 },
+  writing: { c: [[44, 192], [66, 122], [168, 116], [198, 192]], lift: [12, 2], face: 1, open: 0.8, line: [-0.95, 1.0] },
+  drift:   { c: [[118, 192], [214, 178], [58, 116], [136, 74]], lift: [-13, -9], face: -1, open: 1.15 },
+  break:   { c: [[152, 194], [38, 202], [52, 92], [128, 96]], c2: [[128, 96], [192, 100], [196, 158], [160, 166]], lift: [0, 0], face: 1, open: 0 },
+};
+const W = ([x, y]) => [(x - 128) / 100, (208 - y) / 100];
+function inchParams(state) {
+  const s = INCH[state], P = new Float32Array(64);
+  // Twelve segments spaced evenly along the spine, so the body is regular rather than lumpy.
+  const curves = s.c2 ? [s.c, s.c2] : [s.c], dense = [];
+  curves.forEach(c => { for (let k = 0; k <= 200; k++) dense.push(W(cub(c, k / 200))); });
+  const cum = [0]; for (let i = 1; i < dense.length; i++) cum.push(cum[i - 1] + Math.hypot(dense[i][0] - dense[i - 1][0], dense[i][1] - dense[i - 1][1]));
+  const n = 12, total = cum[cum.length - 1];
+  for (let i = 0, j = 0; i < n; i++) {
+    const L = total * i / (n - 1); while (j < cum.length - 2 && cum[j + 1] < L) j++;
+    const [x, y] = dense[j];
+    P.set([x, y, 0, 0.15 + 0.018 * Math.sin(Math.PI * i / (n - 1))], i * 4);
+  }
+  const end = W(s.c2 ? s.c2[3] : s.c[3]);
+  const hd = [end[0] + s.lift[0] / 100, end[1] - s.lift[1] / 100];
+  P.set([hd[0], hd[1], 0, 0.2], 48);
+  // Both eyes sit on the quarter of the head that faces the camera.
+  const fx = s.face, ey = 0.045;
+  P.set([hd[0] + fx * 0.11, hd[1] + ey, 0.15, 0], 52);
+  P.set([hd[0] + fx * 0.175, hd[1] + ey, 0.03, 0], 56);
+  P.set([s.open, s.line ? 1 : 0, s.line ? s.line[0] : 0, s.line ? s.line[1] : 0], 60);
+  return P;
+}
+const SNAIL = {
+  idle:    { stalks: [[-0.14, 0.42], [0.16, 0.40]], neck: 0, open: 1 },
+  focus:   { stalks: [[0.04, 0.45], [0.22, 0.38]], neck: 0.05, open: 0.45 },
+  writing: { stalks: [[0.10, 0.36], [0.27, 0.28]], neck: 0.04, open: 0.75, line: [-1.6, -0.6] },
+  drift:   { stalks: [[-0.30, 0.34], [0.25, 0.42]], neck: -0.03, open: 1.15 },
+  break:   { stalks: null, neck: -0.18, open: 0 },
+};
+function snailParams(state) {
+  const s = SNAIL[state], P = new Float32Array(64);
+  P.set([-0.16, 0.5, 0, 0.43], 0);           // shell centre and radius
+  P.set([state === 'break' ? 0.25 : 0.0, 0, 0, 0], 4);
+  P.set([-0.8, 0.0, 0, 0.11], 8);           // foot start; w lifts the foot to its height
+  const neckX = 0.52 + s.neck * 0.4;
+  P.set([0.42, 0.0, 0, 0], 12);              // foot end / neck base
+  const top = [neckX + 0.08, 0.40 + s.neck, 0];
+  P.set([...top, 0.135], 16);
+  if (s.stalks) {
+    s.stalks.forEach(([dx, dy], i) => {
+      const tip = [top[0] + dx, top[1] + 0.06 + dy, i ? -0.05 : 0.05];
+      P.set([...tip, 0.058], 20 + i * 4);
+      P.set([tip[0] + 0.03, tip[1] + 0.01, tip[2] + 0.045, 0], 28 + i * 4);
+    });
+  }
+  P.set([s.open, s.line ? 1 : 0, s.line ? s.line[0] : 0, s.line ? s.line[1] : 0], 60);
+  return P;
+}
+const MOTH = {
+  idle:    [0.42, 0.42, 0.0, 1],
+  focus:   [1.25, 1.25, 0.0, 0.45],
+  writing: [0.25, 0.95, 0.0, 0.8],
+  drift:   [0.15, 0.85, -0.14, 1.15],
+  break:   [-0.08, -0.08, 0.0, 0],
+};
+function mothParams(state) { const P = new Float32Array(64); P.set(MOTH[state], 0); return P; }
+
+const KINDS = [
+  { name: 'Inch', params: inchParams, cam: [0.5, 0.2, 4.3], target: [0.02, 0.5, 0] },
+  { name: 'Scroll', params: snailParams, cam: [0.45, 0.18, 4.6], target: [0.04, 0.46, 0] },
+  { name: 'Folio', params: mothParams, cam: [0.32, 0.36, 4.8], target: [0, 0.28, 0] },
+];
+
+// ---------- One WebGL renderer; every canvas on the page is a copy of one of its frames.
+const gl = document.createElement('canvas').getContext('webgl', { preserveDrawingBuffer: true, antialias: false });
+const prog = (() => {
+  const vs = gl.createShader(gl.VERTEX_SHADER); gl.shaderSource(vs, 'attribute vec2 a; void main(){ gl_Position = vec4(a, 0.0, 1.0); }'); gl.compileShader(vs);
+  const fs = gl.createShader(gl.FRAGMENT_SHADER); gl.shaderSource(fs, document.getElementById('fs').textContent); gl.compileShader(fs);
+  if (!gl.getShaderParameter(fs, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(fs));
+  const p = gl.createProgram(); gl.attachShader(p, vs); gl.attachShader(p, fs); gl.linkProgram(p); gl.useProgram(p);
+  const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+  const a = gl.getAttribLocation(p, 'a'); gl.enableVertexAttribArray(a); gl.vertexAttribPointer(a, 2, gl.FLOAT, false, 0, 0);
+  return p;
+})();
+const U = n => gl.getUniformLocation(prog, n);
+function draw(target, kind, state, opts = {}) {
+  const k = KINDS[kind], size = target.width;
+  gl.canvas.width = gl.canvas.height = size;
+  gl.viewport(0, 0, size, size);
+  gl.uniform2f(U('uRes'), size, size);
+  gl.uniform1f(U('uKind'), kind);
+  gl.uniform4fv(U('uP[0]'), k.params(state));
+  const zoom = opts.zoom || 1;
+  gl.uniform3f(U('uCam'), k.cam[0], k.cam[1], k.cam[2] / zoom);
+  gl.uniform3f(U('uTarget'), ...k.target);
+  gl.uniform3f(U('uBg'), ...(opts.bg || [0.929, 0.941, 0.953]));
+  gl.uniform1f(U('uAA'), opts.aa || 2);
+  gl.uniform1f(U('uDark'), opts.dark ? 1 : 0);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+  target.getContext('2d').drawImage(gl.canvas, 0, 0);
+}
+
+const grid = document.getElementById('grid');
+const canvas = (px, cls = '') => { const c = document.createElement('canvas'); c.width = c.height = px; if (cls) c.className = cls; return c; };
+KINDS.forEach((k, i) => {
+  const art = document.createElement('article');
+  art.innerHTML = `<h2><span>${i + 1}</span>${k.name}</h2>`;
+  const hero = canvas(760, 'hero'); hero.setAttribute('role', 'img'); hero.setAttribute('aria-label', `${k.name}, idle`);
+  art.append(hero);
+  const row = document.createElement('div'); row.className = 'states';
+  STATES.forEach(s => { const f = document.createElement('figure'); const c = canvas(220); c.setAttribute('role', 'img'); c.setAttribute('aria-label', `${k.name}, ${s}`); f.append(c); f.insertAdjacentHTML('beforeend', `<figcaption>${s}</figcaption>`); row.append(f); draw(c, i, s); });
+  art.append(row);
+  const isl = document.createElement('div'); isl.className = 'island'; isl.setAttribute('aria-label', `${k.name} at notch size`);
+  const ears = document.createElement('div'); ears.className = 'ears';
+  const first = canvas(48); draw(first, i, 'idle', { bg: [0, 0, 0], dark: true, zoom: 1.25, aa: 2 }); isl.append(first);
+  STATES.forEach(s => { const c = canvas(48); draw(c, i, s, { bg: [0, 0, 0], dark: true, zoom: 1.25, aa: 2 }); ears.append(c); });
+  isl.append(ears); art.append(isl);
+  grid.append(art);
+  draw(hero, i, 'idle');
+});
+</script>
+</body>
+</html>

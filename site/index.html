@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>StudyNotch, a study helper in your Mac’s notch</title>
+<meta name="description" content="Select a sentence you don’t understand in your textbook and right-click: Ask is at the top of the menu, and it explains right there using that course’s material. It runs on your Mac with no server and answers with the Claude you already use.">
+<meta name="theme-color" content="#EDF0F3">
+<meta property="og:type" content="website">
+<meta property="og:title" content="StudyNotch, a study helper in your Mac’s notch">
+<meta property="og:description" content="Highlight what you don’t get. Ask with one right-click and read the answer right where you are.">
+<meta property="og:image" content="assets/img/og.png">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gaegu:wght@700&family=Hahmlet:wght@400;700&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body class="home">
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="wrap site-head">
+  <a class="brand" href="index.html" translate="no"><img src="assets/img/app-icon.png" width="30" height="30" alt="">StudyNotch</a>
+  <nav class="site-nav" aria-label="Main menu">
+    <a href="docs/how-it-works.html">How it works</a>
+    <a href="docs/build-log.html">Build log</a>
+    <a href="docs/index.html">Docs</a>
+    <a class="btn btn-primary btn-small" href="docs/index.html">Get started</a>
+  </nav>
+</header>
+
+<main id="main">
+
+<section class="scene" aria-labelledby="top">
+  <div class="wrap scene-grid">
+    <div class="scene-copy">
+      <h1 id="top"><span class="hl" id="headline-mark">Highlight what you don’t get.</span></h1>
+      <p>StudyNotch is a study helper that lives in your Mac’s notch. Select a sentence in your textbook and right-click: “Ask” is at the top of the menu, and it explains right there, using that course’s own material.</p>
+      <div class="actions">
+        <a class="btn btn-primary" href="docs/index.html">Get started</a>
+        <a class="btn" href="docs/how-it-works.html">See how it works</a>
+      </div>
+      <p class="hero-fact">Runs on macOS 13 or later. There is no server: if the Claude app on this Mac is signed in, it answers straight away.</p>
+    </div>
+
+    <div class="demo" id="demo">
+      <button type="button" class="mascot rover" id="rover" data-mood="rest" aria-label="The mascot. Press it to make it hop; drag it to spin it."></button>
+      <p class="say" id="say" aria-hidden="true"></p>
+      <div class="mac" id="mac">
+        <div class="mac-bar" aria-hidden="true"><span><b>Preview</b><i>File</i><i>Edit</i><i>View</i></span><span>2:14 PM</span></div>
+        <div class="island" id="island" data-state="idle"></div>
+        <div id="demo-layer" aria-live="polite"></div>
+        <div class="sheet">
+          <p class="running">Lecture 9, Differentiability of functions of two variables</p>
+          <p class="sheet-title">9.2 Differentiability</p>
+          <p>Definition. We say f is differentiable at (a,b) if the error of its linear approximation L goes to zero faster than the distance to (a,b):</p>
+          <p class="formula">|f(x,y) − L(x,y)| / ‖(x,y) − (a,b)‖ → 0 &nbsp;as&nbsp; (x,y) → (a,b).</p>
+          <p>Theorem 2. <a href="#demo" role="button" class="sentence" data-key="s1">If f is differentiable at (a,b), then f is continuous at (a,b).</a></p>
+          <p>Remark. <a href="#demo" role="button" class="sentence" data-key="s2">The converse is false: a function can have both partial derivatives at a point and still fail to be continuous there.</a> The next example shows how this happens along a diagonal.</p>
+          <p>Example 3. Let f(x,y) = xy / (x² + y²) for (x,y) ≠ (0,0) and f(0,0) = 0. Both partial derivatives exist at the origin, since f vanishes on the two axes.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="tour-cap">
+      <h2 id="hour">One study hour, seven scenes</h2>
+      <p>This is a demo screen. The numbers and answers are prepared examples; in the app, Claude writes the answers.</p>
+    </div>
+
+    <ol class="tour" id="tour" aria-label="Seven scenes from an hour of study">
+      <li><button type="button" class="tour-step"><span>Course</span></button>
+        <p>Press the notch and the island opens, with the mascot settling into the card. Pick a course and press “Start”. Click anywhere else, or leave it alone for 15 seconds, and it folds back.</p></li>
+      <li><button type="button" class="tour-step"><span>Notch</span></button>
+        <p>During a session, only the mascot and the minutes left stay beside the notch. No seconds: a number that keeps changing is the first thing your eye catches. Point at it for a one-line summary under the island.</p></li>
+      <li><button type="button" class="tour-step"><span>Right-click</span></button>
+        <p>Select some text and right-click: “Ask” is at the top of the menu. No digging through the Services submenu. It’s there outside a session too.</p></li>
+      <li><button type="button" class="tour-step"><span>Ask</span></button>
+        <p>A small window opens where you clicked. Pick a button such as “I don’t get this”, or type your own question, then press “Send”. Take a screenshot during a session and the same window opens with the picture.</p></li>
+      <li><button type="button" class="tour-step"><span>Answer</span></button>
+        <p>It finds which page of your course PDFs the sentence is on and explains with that page in view. No Claude window appears. Under the answer, you can narrow down what is still unclear.</p></li>
+      <li><button type="button" class="tour-step"><span>Drift</span></button>
+        <p>It doesn’t block sites. Stay more than a minute somewhere on your distraction list and a card appears; if you don’t react, it folds after 8 seconds. It never shows while you’re typing.</p></li>
+      <li><button type="button" class="tour-step"><span>Wrap-up</span></button>
+        <p>Your focus time, drift time and questions are recorded. Next time you start the same course, what you got stuck on comes first.</p></li>
+    </ol>
+
+    <div class="tour-detail">
+      <p><strong id="tour-name"></strong><span id="tour-text" aria-live="polite">Press an underlined sentence or the black notch on the screen, or step through the numbers in order. The app works the same way: everything is a click, with no shortcuts to remember.</span></p>
+      <button type="button" class="btn btn-small" id="tour-next" hidden>Start from 1</button>
+    </div>
+  </div>
+</section>
+
+<section class="band" aria-labelledby="moods-h">
+  <div class="wrap moods">
+    <div class="moods-copy">
+      <h2 id="moods-h">It never blocks you. It shows you, with a face.</h2>
+      <p>A small glossy drop lives at one end of the island and shows how things are going with its eyes, which also follow your pointer. Pick an expression. Press it and it hops; drag it and it spins.</p>
+      <div class="mood-list" role="group" aria-label="Pick an expression">
+        <button type="button" class="mood" aria-pressed="true" data-mood="rest" data-when="Outside a session it just watches your pointer and blinks now and then.">Rest</button>
+        <button type="button" class="mood" aria-pressed="false" data-mood="focus" data-when="During a session its eyes narrow and it reads along with you.">Focus</button>
+        <button type="button" class="mood" aria-pressed="false" data-mood="drift" data-when="Stay more than a minute somewhere on your distraction list and its eyes go wide. Nothing is blocked.">Drifting</button>
+        <button type="button" class="mood" aria-pressed="false" data-mood="sleep" data-when="On a break it closes its eyes and dozes.">Break</button>
+        <button type="button" class="mood" aria-pressed="false" data-mood="thinking" data-when="While your answer is being written, it looks up, thinking.">Thinking</button>
+        <button type="button" class="mood" aria-pressed="false" data-mood="happy" data-when="It smiles when you point at it or press it.">Glad</button>
+        <button type="button" class="mood" aria-pressed="false" data-mood="proud" data-when="When you finish a session, this face comes with the summary card.">Done</button>
+      </div>
+      <p class="mood-when" id="mood-when" aria-live="polite">Outside a session it just watches your pointer and blinks now and then.</p>
+    </div>
+    <div class="mood-stage" id="mood-stage">
+      <button type="button" class="mascot" id="mood-pet" data-mood="rest" aria-label="The mascot. Press it to make it hop; drag it to spin it."></button>
+    </div>
+  </div>
+</section>
+
+<section class="band band-desk" aria-labelledby="connect">
+  <div class="wrap noted">
+    <div>
+      <h2 id="connect">The Claude you already use answers in the background</h2>
+      <p>StudyNotch has no server. The first thing it asks is which AI should answer: Claude, ChatGPT or Gemini, each with your own account. Only the one you connect gets your questions. It runs the Claude Code that ships inside the app in the background, takes only the answer, and never opens a Claude window.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Connection</th><th>What you need</th><th>Cost</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Claude app</strong></td><td>Install it and sign in. That’s all.</td><td>Included in your Claude subscription</td></tr>
+            <tr><td><strong>ChatGPT app</strong></td><td>Install it and sign in. StudyNotch uses the Codex inside it.</td><td>Included in your ChatGPT subscription</td></tr>
+            <tr><td><strong>Gemini</strong></td><td>Pick it in the first step. StudyNotch installs Google’s Antigravity CLI and you sign in with Google once.</td><td>Depends on your Google plan</td></tr>
+            <tr><td><strong>API key</strong></td><td>Enter an Anthropic API key in the app</td><td>Pay for what you use</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="actions"><a class="btn" href="docs/connect.html">How to connect</a></div>
+    </div>
+    <aside>
+      <p class="margin-note">It never clicks the Claude app’s window or scrapes its screen. It only runs the official tool, signed in to the same account.</p>
+      <p class="margin-note">An API key is stored only in your Mac’s Keychain. With no server, there is nowhere else for it to go.</p>
+    </aside>
+  </div>
+</section>
+
+<section class="band band-desk" aria-labelledby="course">
+  <div class="wrap noted">
+    <div>
+      <h2 id="course">What you put in a course folder is what it knows</h2>
+      <p>Each course has a folder. Put your lecture PDFs and textbook in it, and when you pick that course for a session, the app answers with that material in mind.</p>
+<pre><code>~/StudyNotch/Courses/MATH 237/
+├── course.md    <span class="dim">textbook, progress, your professor’s notation</span>
+├── materials/   <span class="dim">lecture PDFs, textbook</span>
+├── cards.md     <span class="dim">review cards</span>
+└── log/         <span class="dim">questions and answers by date</span></code></pre>
+    </div>
+    <aside>
+      <figure class="isl-piece">
+        <div aria-hidden="true">
+          <div class="isl-pills">
+            <span class="isl-pill on">MATH 237</span>
+            <span class="isl-pill">ACTSCI 221</span>
+            <span class="isl-pill">General</span>
+          </div>
+          <div class="isl-card"><div class="isl-drop">Drop PDFs or a folder here<span>They join the course when you press Add</span></div></div>
+        </div>
+      </figure>
+      <p class="margin-note">Link a folder you already keep, or drag PDFs onto the notch. During a session they join that course.</p>
+      <p class="margin-note">If the answer isn’t in your material, it says “not from your material” at the end. It never pretends otherwise.</p>
+    </aside>
+  </div>
+</section>
+
+<section class="band" aria-labelledby="privacy">
+  <div class="wrap noted">
+    <div>
+      <h2 id="privacy">Only what goes into a question leaves your Mac</h2>
+      <p>Distraction checks happen entirely on this Mac. What you looked at is never sent anywhere.</p>
+      <div class="inout">
+        <div class="in-mac">
+          <h3>Stays on your Mac</h3>
+          <ul>
+            <li>Which apps and sites you looked at</li>
+            <li>Session history, focus and drift time</li>
+            <li>Every PDF in your course folders</li>
+            <li>Review cards and past questions</li>
+          </ul>
+        </div>
+        <div class="out-mac">
+          <h3>Sent to the AI when you ask</h3>
+          <ul>
+            <li>The selected text, or one screenshot</li>
+            <li>Your course notes and the text of the matching page</li>
+            <li>Any page of the course’s PDFs that the AI opens to answer</li>
+            <li>The name and window title of the app you were reading in</li>
+            <li>Your question</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <aside>
+      <p class="margin-note">No usage statistics are collected.</p>
+      <p class="margin-note">To draw math in answers, a math library is loaded from the internet. The next version will ship it inside the app.</p>
+    </aside>
+  </div>
+</section>
+
+<section class="band" aria-labelledby="faq">
+  <div class="wrap">
+    <div class="lede"><h2 id="faq">Questions</h2></div>
+    <div class="faq">
+      <div><h3>Does it cost anything?</h3>
+        <p>Not right now: this is an early version and the app is free. Answers come out of your existing Claude subscription. If you connect an API key, you pay for what you use.</p></div>
+      <div><h3>Does it block distracting sites?</h3>
+        <p>No, it only tells you. Press “It’s for study” and that place won’t count as a distraction for the rest of the session.</p></div>
+      <div><h3>Which apps can I read in?</h3>
+        <p>It is built around Preview, Safari and Chrome-based browsers. Apps hand over selected text in different ways, so if your text can’t be read, take a screenshot during a session and ask about that instead.</p></div>
+      <div><h3>Does it work offline?</h3>
+        <p>The timer and drift cards do. To get answers, it needs to reach the AI you connected.</p></div>
+      <div><h3>What about a Mac without a notch, or an external display?</h3>
+        <p>It appears as a small black bar in the middle of the menu bar. You choose which screen it lives on from the menu bar icon.</p></div>
+      <div><h3>Is the app in English?</h3>
+        <p>Yes. Answers come back in the language you type: ask in Korean and the answer is in Korean. A button pressed on its own gets an English answer.</p></div>
+      <div><h3>Does it work on iPhone or iPad?</h3>
+        <p>Not yet. It is Mac only for now.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="band band-desk" aria-labelledby="start">
+  <div class="wrap end">
+    <div class="closing">
+      <h2 id="start">Build it from source and use it today</h2>
+      <p>There is no download yet. One command builds it, and on first launch the notch walks you through connecting an AI and granting permissions, one step at a time.</p>
+      <div class="actions">
+        <a class="btn btn-primary" href="docs/index.html">Get started</a>
+        <a class="btn" href="docs/build-log.html">See how it was built</a>
+      </div>
+    </div>
+    <button type="button" class="mascot" id="end-pet" data-mood="rest" aria-label="The mascot. Press it to make it hop; drag it to spin it."></button>
+  </div>
+</section>
+
+</main>
+
+<footer class="wrap site-foot">
+  <nav aria-label="Footer menu">
+    <a href="docs/index.html">Get started</a>
+    <a href="docs/connect.html">Connect an AI</a>
+    <a href="docs/use.html">Using it</a>
+    <a href="docs/how-it-works.html">How it works</a>
+    <a href="docs/build-log.html">Build log</a>
+  </nav>
+  <p>StudyNotch is a working name, and this is an early version still in development.</p>
+  <p>Claude and Claude Code are trademarks of Anthropic. ChatGPT and Codex are trademarks of OpenAI. Gemini is a trademark of Google. StudyNotch is not affiliated with any of these companies.</p>
+</footer>
+
+<script src="assets/squat.js" defer></script>
+<script src="assets/mascot.js" defer></script>
+<script src="assets/demo.js" defer></script>
+</body>
+</html>

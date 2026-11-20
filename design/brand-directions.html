@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Static marks</title>
+<meta name="description" content="Eleven static marks for StudyNotch, kept for reference: Apple-tidy shapes, school and library emblems, and single letters.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hahmlet:wght@400;700&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
+<style>
+/* Only DESIGN.md colours: paper, desk, ink, graphite, rule, highlighter, and the island's state colours. */
+:root {
+  --paper: #FFFFFF; --desk: #EDF0F3; --ink: #14233B; --graphite: #566173; --rule: #D5DBE3; --hl: #FFE94A;
+  --focus: #7CE38B; --drift: #FFB25E; --think: #C9A6FF;
+  color-scheme: light;
+}
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 400 16px/1.65 "IBM Plex Sans KR", -apple-system, "Apple SD Gothic Neo", sans-serif; word-break: keep-all; -webkit-font-smoothing: antialiased; }
+.wrap { width: min(1264px, 100%); margin-inline: auto; padding-inline: 24px; }
+@media (max-width: 560px) { .wrap { padding-inline: 16px; } }
+header { padding-block: 48px 28px; display: grid; gap: 14px; }
+h1 { margin: 0; font: 700 clamp(30px, 4vw, 46px)/1.2 "Hahmlet", serif; letter-spacing: -.02em; }
+header > p { margin: 0; color: var(--graphite); max-width: 46em; }
+
+/* The recommendation, said once at the top. */
+.pick { display: grid; grid-template-columns: auto 1fr; gap: 18px 28px; align-items: center; padding: 22px 24px; border: 1px solid var(--ink); border-radius: 14px; margin-top: 6px; }
+.pick h2 { margin: 0 0 6px; font: 700 20px/1.35 "Hahmlet", serif; }
+.pick ul { margin: 0; padding-left: 1.1em; display: grid; gap: 4px; color: var(--graphite); font-size: 15px; }
+.pick .pair { display: flex; gap: 14px; align-items: center; }
+@media (max-width: 700px) { .pick { grid-template-columns: 1fr; } }
+
+section { padding-block: 28px 8px; }
+section > h2 { margin: 0 0 4px; font: 700 24px/1.3 "Hahmlet", serif; }
+section > p { margin: 0 0 18px; color: var(--graphite); }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); gap: 18px; }
+.card { margin: 0; border: 1px solid var(--rule); border-radius: 16px; overflow: hidden; display: grid; grid-template-rows: auto 1fr; }
+.plate { position: relative; height: 230px; background: var(--desk); display: grid; place-items: center; }
+.mark { color: var(--ink); --bg: var(--paper); display: block; }
+.plate > .mark { width: 128px; height: 128px; margin-top: 30px; }
+/* The top of a screen: the notch with the mark at its real size in the left ear. */
+.notch {
+  position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 220px; height: 32px; background: #000; border-radius: 0 0 12px 12px;
+  display: flex; align-items: center; justify-content: space-between; padding-inline: 22px; color: #F5F6F8;
+  font: 600 12px/1 -apple-system, BlinkMacSystemFont, sans-serif; font-variant-numeric: tabular-nums;
+}
+.notch .mark { width: 18px; height: 18px; color: #F5F6F8; --bg: #000; }
+.card figcaption { padding: 16px 18px 20px; display: grid; gap: 8px; align-content: start; }
+.card h3 { margin: 0; font: 700 18px/1.35 "Hahmlet", serif; display: flex; gap: 10px; align-items: baseline; }
+.card h3 b { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--ink); color: #fff; font: 600 12px/1 "IBM Plex Sans KR", sans-serif; flex: none; transform: translateY(-2px); }
+.card dl { margin: 0; display: grid; grid-template-columns: 6.6em 1fr; gap: 5px 10px; font-size: 14.5px; line-height: 1.55; }
+.card dt { color: var(--graphite); }
+.card dd { margin: 0; }
+
+/* Candidate 1 shows its four states, since motion is the whole idea. */
+.states { position: absolute; left: 0; right: 0; bottom: 14px; display: flex; justify-content: center; gap: 8px; }
+.st { display: grid; justify-items: center; gap: 4px; font-size: 11.5px; color: var(--graphite); }
+.st i { position: relative; display: block; width: 56px; height: 18px; border-radius: 9px; background: #000; overflow: hidden; }
+.st i::after { content: ""; position: absolute; left: 12px; top: 7px; height: 4px; border-radius: 2px; width: 32px; background: var(--c); }
+.st.focus i::after { width: 20px; }
+.st.sleep i::after { background: repeating-linear-gradient(90deg, rgba(255,255,255,.5) 0 4px, transparent 4px 7px); }
+@media (prefers-reduced-motion: no-preference) {
+  .st.think i::after { transform-origin: 0 50%; animation: sweep 1.5s ease-in-out infinite; }
+  .st.drift i::after { animation: blink 1.6s ease-in-out infinite; }
+  @keyframes sweep { 0% { transform: scaleX(.12); } 73%, 100% { transform: scaleX(1); } }
+  @keyframes blink { 50% { opacity: .35; } }
+}
+.plate.has-states > .mark { margin-top: 0; margin-bottom: 26px; }
+footer { padding-block: 40px 64px; color: var(--graphite); font-size: 14px; }
+
+/* Inside the gallery (index.html), the sheet shows only its candidates. */
+.embed body > header, .embed .bar, .embed body > footer { display: none; }
+.embed .grid { padding-block: 4px 8px; }
+.embed .wrap { padding-inline: 0; }
+</style>
+</head>
+<body>
+<header class="wrap">
+  <h1>Eleven static marks, for reference</h1>
+  <p>These are logos rather than creatures: marks that can show a state without a face, grouped as Apple-tidy shapes, school and library emblems, and single letters. The living versions of their best ideas are on the other sheets (the line became the inchworm, the owl the statue, the lamp the candle, the nib the quill). Colours are only our ink, paper and highlighter; the black notch above each card shows the mark at real size (18px).</p>
+  <div class="pick">
+    <div class="pair" aria-hidden="true" id="pick-marks"></div>
+    <div>
+      <h2>As marks: ① Living line in the notch, ③ One page as the app icon</h2>
+      <ul>
+        <li>The notch ear is 18px, so every drawing shrinks; a single line is the clearest thing at that size and, like Apple’s Dynamic Island, shows state through motion.</li>
+        <li>The highlighter line already is what the product does; it needs no explaining.</li>
+        <li>The academic feel can come from the type (serif headings) and small touches like ④ the seal.</li>
+      </ul>
+    </div>
+  </div>
+</header>
+
+<main class="wrap" id="main"></main>
+<footer class="wrap">Drafts. Before any of these becomes a real logo, check for trademarks with the same name or a similar shape.</footer>
+
+<script>
+(function () {
+  'use strict';
+  var HL = '#FFE94A', RULE = '#D5DBE3', GRAPHITE = '#566173';
+  // Marks use currentColor for ink and var(--bg) for cut-outs, so the same drawing works on paper and in the black notch.
+  var MARKS = {
+    line: '<rect x="8" y="42" width="104" height="36" rx="18" fill="#000"/><rect x="30" y="57" width="60" height="6" rx="3" fill="' + HL + '"/>',
+    notch: '<rect x="14" y="22" width="92" height="78" rx="14" fill="none" stroke="currentColor" stroke-width="7"/>' +
+      '<path d="M44 22H76V28a7 7 0 0 1-7 7H51a7 7 0 0 1-7-7Z" fill="currentColor"/><rect x="34" y="60" width="52" height="9" rx="2" fill="' + HL + '"/>',
+    icon: '<rect x="8" y="8" width="104" height="104" rx="25" fill="#14233B"/><path d="M33 26H75L87 38V94H33Z" fill="#fff"/><path d="M75 26V38H87Z" fill="' + RULE + '"/>' +
+      '<rect x="42" y="47" width="34" height="4" rx="2" fill="' + RULE + '"/><rect x="40" y="60" width="40" height="9" rx="2" fill="' + HL + '"/><rect x="42" y="78" width="28" height="4" rx="2" fill="' + RULE + '"/>',
+    seal: '<defs><path id="ring" d="M14 60a46 46 0 1 1 92 0a46 46 0 1 1-92 0"/></defs>' +
+      '<circle cx="60" cy="60" r="55" fill="none" stroke="currentColor" stroke-width="3"/><circle cx="60" cy="60" r="37" fill="none" stroke="currentColor" stroke-width="1.5"/>' +
+      '<text font-family="Hahmlet, serif" font-size="9" font-weight="700" letter-spacing="1.9" fill="currentColor"><textPath href="#ring">LEGE · NOTA · INTELLEGE · MMXXVI ·</textPath></text>' +
+      '<path d="M38 70Q49 63 60 70Q71 63 82 70V50Q71 43 60 50Q49 43 38 50Z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>' +
+      '<path d="M60 50V70" stroke="currentColor" stroke-width="2.5"/><rect x="43" y="56" width="12" height="4" fill="' + HL + '"/>',
+    ribbon: '<rect x="16" y="8" width="88" height="6" rx="3" fill="' + RULE + '"/><path d="M42 8H78V110L60 93L42 110Z" fill="currentColor"/><rect x="42" y="34" width="36" height="7" fill="' + HL + '"/>',
+    nib: '<path d="M60 8C75 24 86 48 84 72L60 102L36 72C34 48 45 24 60 8Z" fill="currentColor"/><circle cx="60" cy="58" r="6.5" fill="var(--bg)"/>' +
+      '<path d="M60 64V100" stroke="var(--bg)" stroke-width="2.6"/><rect x="38" y="106" width="44" height="7" rx="2" fill="' + HL + '"/>',
+    owl: '<path d="M28 24L42 40M92 24L78 40" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>' +
+      '<path d="M30 34Q60 44 90 34V80Q90 106 60 110Q30 106 30 80Z" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/>' +
+      '<circle cx="47" cy="60" r="11" fill="none" stroke="currentColor" stroke-width="4"/><circle cx="73" cy="60" r="11" fill="none" stroke="currentColor" stroke-width="4"/>' +
+      '<path d="M40 57H54M66 57H80" stroke="currentColor" stroke-width="3"/><circle cx="47" cy="63" r="4" fill="currentColor"/><circle cx="73" cy="63" r="4" fill="currentColor"/>' +
+      '<path d="M56 72L60 80L64 72Z" fill="currentColor"/><path d="M46 92L60 99L74 92" fill="none" stroke="' + HL + '" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>',
+    lamp: '<path d="M26 62H94L108 100H12Z" fill="' + HL + '" opacity=".45"/><rect x="57" y="56" width="6" height="44" fill="currentColor"/>' +
+      '<path d="M16 58L30 34H90L104 58Z" fill="currentColor"/><rect x="16" y="56" width="88" height="4" fill="' + GRAPHITE + '"/>' +
+      '<path d="M84 60V74" stroke="' + GRAPHITE + '" stroke-width="1.6"/><circle cx="84" cy="76" r="2.4" fill="' + GRAPHITE + '"/><rect x="34" y="100" width="52" height="10" rx="3" fill="currentColor"/>',
+    laurel: '', // built below
+    mono: '<rect x="24" y="66" width="72" height="20" fill="' + HL + '"/><text x="60" y="94" text-anchor="middle" font-family="Hahmlet, serif" font-weight="700" font-size="92" fill="currentColor">S</text>',
+    pilcrow: '<rect x="30" y="70" width="60" height="18" fill="' + HL + '"/><text x="60" y="96" text-anchor="middle" font-family="Hahmlet, serif" font-weight="400" font-size="96" fill="currentColor">¶</text>'
+  };
+  // A laurel: leaves along two arcs, around a serif monogram.
+  (function () {
+    var leaves = '';
+    // Two branches rising from the bottom, leaves lying along the circle (angle theta, measured as in maths).
+    for (var i = 0; i < 7; i++) {
+      var th = (250 - i * 19) * Math.PI / 180, r = 44;
+      var x = 60 + Math.cos(th) * r, y = 62 - Math.sin(th) * r, phi = 180 - (250 - i * 19) - 18;
+      leaves += '<ellipse cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" rx="4" ry="9.5" transform="rotate(' + phi.toFixed(1) + ' ' + x.toFixed(1) + ' ' + y.toFixed(1) + ')" fill="currentColor"/>';
+      leaves += '<ellipse cx="' + (120 - x).toFixed(1) + '" cy="' + y.toFixed(1) + '" rx="4" ry="9.5" transform="rotate(' + (-phi).toFixed(1) + ' ' + (120 - x).toFixed(1) + ' ' + y.toFixed(1) + ')" fill="currentColor"/>';
+    }
+    MARKS.laurel = leaves + '<text x="60" y="74" text-anchor="middle" font-family="Hahmlet, serif" font-weight="700" font-size="30" fill="currentColor">SN</text>' +
+      '<rect x="44" y="80" width="32" height="4" fill="' + HL + '"/>';
+  })();
+  function svg(id, label) {
+    return '<svg class="mark" viewBox="0 0 120 120" ' + (label ? 'role="img" aria-label="' + label + '"' : 'aria-hidden="true"') + '>' + MARKS[id] + '</svg>';
+  }
+
+  var GROUPS = [
+    { title: 'No character, Apple-tidy', lede: 'No object, no face: one shape and its motion.', items: [
+      { id: 'line', name: 'Living line', label: 'One yellow line inside a black pill',
+        how: 'One highlighter line in the notch ear. It fills with progress in focus, redraws itself while answering, blinks amber when drifting and turns dotted on a break.',
+        feel: 'The iPhone Dynamic Island’s activity indicators, Apple Watch rings.',
+        fit: 'The smallest and clearest, but no memorable “face” for the site.', states: true },
+      { id: 'notch', name: 'Notch mark', label: 'A screen outline with a notch and a yellow line inside',
+        how: 'A highlighter line inside a screen outline with a notch; state shows only in the line’s colour.',
+        feel: 'The MacBook notch itself, SF Symbols device glyphs.',
+        fit: 'Matches the name (Notch) most exactly; at 18px the outline looks heavy.' },
+      { id: 'icon', name: 'One page (app icon)', label: 'A sheet of paper with a highlighter line inside a navy rounded square',
+        how: 'Today’s mascot without its face: one sheet of paper, for the Dock and menu bar icon.',
+        feel: 'One object seen head-on, like macOS Books, Notes and Pages.',
+        fit: 'Keeps almost everything we have; suits an icon better than the notch.' }
+    ] },
+    { title: 'School and library', lede: 'Borrowing the language of old academic institutions: serif type, line drawing, one ink colour.', items: [
+      { id: 'seal', name: 'Seal', label: 'A round seal reading LEGE NOTA INTELLEGE around an open book',
+        how: 'A round seal with the Latin “Lege · Nota · Intellege” (read, mark, understand) around an open book.',
+        feel: 'University crests and diploma seals.',
+        fit: 'A fine finishing touch for the site and docs; in an 18px notch it is just a circle.' },
+      { id: 'ribbon', name: 'Ribbon bookmark', label: 'A navy ribbon bookmark hanging from a book, with a V-notch at its end',
+        how: 'A hardcover’s ribbon bookmark; the V cut at its end is the “notch”.',
+        feel: 'Ribbon bookmarks in hardcover classics, tidy publishers’ covers.',
+        fit: 'Quiet, with a hidden pun; in the notch it is a short bar.' },
+      { id: 'nib', name: 'Fountain-pen nib', label: 'A navy fountain-pen nib above a yellow line',
+        how: 'A nib drawing a highlighter line; state shows in the line’s colour.',
+        feel: 'Pen makers’ emblems, old journal covers.',
+        fit: 'Formal, but closer to “writing” than to “asking and answering”.' },
+      { id: 'owl', name: 'Owl of Minerva', label: 'A line-drawn owl with half-closed eyes',
+        how: 'The symbol of wisdom, in a few lines with half-closed eyes. Not cute.',
+        feel: 'The owl on Athenian coins, university library ornaments.',
+        fit: 'Study apps already have a famous owl it could be confused with.' },
+      { id: 'lamp', name: 'Reading-room lamp', label: 'A desk lamp with a navy shade and yellow light below',
+        how: 'A library reading-room lamp: on while you study, off on a break.',
+        feel: 'Rows of lamps in a library reading room.',
+        fit: 'On and off tells the session well; small, it looks like a hat.' },
+      { id: 'laurel', name: 'Laurel monogram', label: 'SN between laurel branches',
+        how: 'SN between laurel branches, shown briefly when a session ends.',
+        feel: 'Certificates, diplomas, classic publishers’ covers.',
+        fit: 'The most “academia”, but the heaviest and hard to use small.' }
+    ] },
+    { title: 'One letter', lede: 'Type instead of a picture, the way publishers and textbooks do it.', items: [
+      { id: 'mono', name: 'Serif initial', label: 'A serif S with a highlighter stroke',
+        how: 'A single Hahmlet S, highlighted across its lower half.',
+        feel: 'Publisher logos, single-letter app icons.',
+        fit: 'Same typeface as the site’s headings, so it ties together; reads well in the notch.' },
+      { id: 'pilcrow', name: 'Pilcrow ¶', label: 'A pilcrow with a highlighter stroke',
+        how: 'A textbook’s paragraph mark, highlighted: a sign pointing at “this paragraph”.',
+        feel: 'Margin notes in textbooks, footnote marks.',
+        fit: 'Says “a tool for readers” precisely, but unfamiliar enough to need explaining at first.' }
+    ] }
+  ];
+
+  var main = document.getElementById('main'), n = 0;
+  GROUPS.forEach(function (g) {
+    var sec = document.createElement('section');
+    var html = '<h2>' + g.title + '</h2><p>' + g.lede + '</p><div class="grid">';
+    g.items.forEach(function (it) {
+      n += 1;
+      var ear = it.id === 'line' ? '<svg class="mark" viewBox="0 0 120 120" aria-hidden="true"><rect x="10" y="54" width="100" height="12" rx="6" fill="' + HL + '"/></svg>' : svg(it.id);
+      var states = it.states ? '<div class="states" aria-hidden="true">' +
+        '<span class="st focus" style="--c:' + HL + '"><i></i>Focus</span><span class="st think" style="--c:#C9A6FF"><i></i>Answering</span>' +
+        '<span class="st drift" style="--c:#FFB25E"><i></i>Drift</span><span class="st sleep"><i></i>Break</span></div>' : '';
+      html += '<figure class="card"><div class="plate' + (it.states ? ' has-states' : '') + '">' +
+        '<div class="notch" aria-hidden="true">' + ear + '<span>33m</span></div>' + svg(it.id, it.label) + states + '</div>' +
+        '<figcaption><h3><b>' + n + '</b>' + it.name + '</h3><dl><dt>Looks</dt><dd>' + it.how + '</dd><dt>Feels like</dt><dd>' + it.feel + '</dd><dt>Fit</dt><dd>' + it.fit + '</dd></dl></figcaption></figure>';
+    });
+    sec.innerHTML = html + '</div>';
+    main.appendChild(sec);
+  });
+  document.getElementById('pick-marks').innerHTML = svg('line') + svg('icon');
+  Array.prototype.forEach.call(document.querySelectorAll('#pick-marks .mark'), function (m) { m.style.width = m.style.height = '72px'; });
+})();
+</script>
+<script>
+/* When this sheet sits inside the gallery (opened as file#embed): hide its own header and state bar, tell the gallery
+   its height, and take state changes from the gallery's one state bar. */
+(function () {
+  if (location.hash !== '#embed') return;
+  document.documentElement.classList.add('embed');
+  function send() { parent.postMessage({ sheetHeight: document.documentElement.scrollHeight }, '*'); }
+  window.addEventListener('load', send);
+  window.addEventListener('resize', send);
+  if ('ResizeObserver' in window) new ResizeObserver(send).observe(document.body);
+  window.addEventListener('message', function (e) {
+    var s = e.data && e.data.state;
+    if (!s) return;
+    var names = s === 'think' ? ['think', 'thinking'] : [s], button = null;
+    names.some(function (n) { button = document.querySelector('.state[data-state="' + n + '"], .mood[data-mood="' + n + '"]'); return !!button; });
+    if (button) button.click();
+  });
+})();
+</script>
+</body>
+</html>

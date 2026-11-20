@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>ko</string>
+    <key>CFBundleExecutable</key>
+    <string>StudyNotch</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
+    <key>CFBundleIdentifier</key>
+    <string>app.studynotch.StudyNotch</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleName</key>
+    <string>StudyNotch</string>
+    <key>CFBundleDisplayName</key>
+    <string>StudyNotch</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>0.1.0</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>13.0</string>
+    <key>LSUIElement</key>
+    <true/>
+    <key>NSHighResolutionCapable</key>
+    <true/>
+    <key>NSAppleEventsUsageDescription</key>
+    <string>공부 세션 중에 브라우저에서 보고 있는 탭 주소를 읽어 딴짓인지 판단합니다. 주소는 이 맥 밖으로 나가지 않습니다.</string>
+    <key>NSDesktopFolderUsageDescription</key>
+    <string>방금 찍은 스크린샷을 읽어 질문에 붙입니다.</string>
+    <key>NSDocumentsFolderUsageDescription</key>
+    <string>스크린샷을 문서 폴더에 저장하도록 해 둔 경우, 방금 찍은 스크린샷을 읽어 질문에 붙입니다.</string>
+    <key>NSDownloadsFolderUsageDescription</key>
+    <string>스크린샷을 다운로드 폴더에 저장하도록 해 둔 경우, 방금 찍은 스크린샷을 읽어 질문에 붙입니다.</string>
+</dict>
+</plist>

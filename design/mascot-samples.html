@@ -1,0 +1,588 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Desk-object creatures</title>
+<meta name="description" content="Eight StudyNotch mascot candidates made from study-desk objects, all in CSS 3D. They watch your pointer, hop when pressed and spin when dragged.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hahmlet:wght@700&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
+<style>
+/* Colours are DESIGN.md's: paper, desk, ink, graphite, rule, highlighter, pen blue, and the course highlighters. */
+:root {
+  --paper: #FFFFFF; --desk: #EDF0F3; --ink: #14233B; --graphite: #566173; --rule: #D5DBE3;
+  --hl: #FFE94A; --pen: #1F4FD8;
+  color-scheme: light;
+}
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 400 16px/1.65 "IBM Plex Sans KR", -apple-system, "Apple SD Gothic Neo", sans-serif; word-break: keep-all; -webkit-font-smoothing: antialiased; }
+.wrap { width: min(1264px, 100%); margin-inline: auto; padding-inline: 24px; }
+@media (max-width: 560px) { .wrap { padding-inline: 16px; } }
+header { padding-block: 40px 8px; display: grid; gap: 12px; }
+h1 { margin: 0; font: 700 clamp(30px, 4vw, 44px)/1.2 "Hahmlet", serif; letter-spacing: -.02em; }
+header p { margin: 0; color: var(--graphite); max-width: 44em; }
+:focus-visible { outline: 2px solid var(--pen); outline-offset: 3px; border-radius: 6px; }
+
+/* The mood bar changes every candidate at once, so faces can be compared side by side. */
+.bar { position: sticky; top: 0; z-index: 10; background: var(--paper); padding-block: 14px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; border-bottom: 1px solid var(--rule); }
+.bar span { color: var(--graphite); font-size: 14.5px; margin-right: 6px; }
+.mood {
+  min-height: 44px; padding: 0 16px; border: 1px solid var(--rule); border-radius: 10px; background: var(--paper); color: var(--ink);
+  font: 500 15px/1 inherit; font-family: inherit; cursor: pointer; transition: background-color .15s, border-color .15s, color .15s, transform .12s cubic-bezier(.23, 1, .32, 1);
+}
+.mood:active { transform: scale(.97); }
+.mood[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: #fff; }
+@media (hover: hover) and (pointer: fine) { .mood:hover { border-color: var(--ink); } }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 282px), 1fr)); gap: 20px; padding-block: 22px 64px; }
+.cand { margin: 0; border: 1px solid var(--rule); border-radius: 20px; overflow: hidden; display: grid; grid-template-rows: auto 1fr; background: var(--paper); }
+/* The stage is the top of a screen: the notch hangs from it with the small mascot in its left ear. */
+.stage { position: relative; height: 270px; background: var(--desk); display: grid; place-items: center; overflow: hidden; --h: 150px; }
+.stage .m.big { margin-top: 46px; }
+.notch {
+  position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 236px; height: 32px; background: #000;
+  border-radius: 0 0 12px 12px; display: flex; align-items: center; justify-content: space-between; color: #F5F6F8;
+  font: 600 12px/1 -apple-system, BlinkMacSystemFont, sans-serif; font-variant-numeric: tabular-nums;
+}
+.ear { width: 76px; height: 32px; display: inline-flex; align-items: center; justify-content: center; gap: 5px; }
+.ear svg { width: 12px; height: 12px; }
+.cand figcaption { padding: 16px 18px 20px; display: grid; gap: 8px; align-content: start; }
+.cand h2 { margin: 0; font: 700 19px/1.35 "Hahmlet", serif; display: flex; gap: 10px; align-items: baseline; }
+.cand h2 b { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--ink); color: #fff; font: 600 13px/1 "IBM Plex Sans KR", sans-serif; flex: none; transform: translateY(-2px); }
+.cand h2 small { font: 500 13px/1 "IBM Plex Sans KR", sans-serif; color: var(--graphite); }
+.cand p { margin: 0; color: var(--graphite); font-size: 15px; }
+.cand dl { margin: 4px 0 0; display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; font-size: 14.5px; line-height: 1.55; }
+.cand dt { color: var(--graphite); }
+.cand dd { margin: 0; }
+
+/* ---------- One engine for every candidate ----------
+   1em is the character's size unit. Faces are flat planes placed in 3D (`.pl`); `.part` groups planes that
+   move together (a cap, a cover). The script turns `.body` toward the pointer. */
+.m {
+  position: relative; display: inline-block; flex: none; font-size: var(--h); line-height: 1; padding: 0; margin: 0;
+  border: 0; background: none; color: var(--ink); cursor: grab; touch-action: pan-y; -webkit-user-select: none; user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.m.held { cursor: grabbing; }
+.m:focus-visible { outline: 2px solid var(--pen); outline-offset: 10px; border-radius: 14px; }
+.m .sh { position: absolute; left: 6%; right: 6%; bottom: -.07em; height: .13em; border-radius: 50%; background: radial-gradient(closest-side, rgba(20, 35, 59, .28), transparent); pointer-events: none; }
+.m .rig { position: absolute; inset: 0; perspective: 4.4em; transform-origin: 50% 100%; }
+.m .body { position: absolute; inset: 0; transform-style: preserve-3d; transform: rotateX(5deg) rotateY(-16deg); }
+.m .pl { position: absolute; left: 50%; top: 50%; display: block; backface-visibility: hidden; }
+.m .pl.two { backface-visibility: visible; }
+.m .part { position: absolute; left: 50%; top: 50%; width: 0; height: 0; transform-style: preserve-3d; }
+.m .face { position: absolute; inset: 0; width: 100%; height: 100%; display: block; overflow: visible; }
+.m .bl { transform-box: fill-box; transform-origin: 50% 50%; }
+.m.blink .bl { transform: scaleY(.1); }
+.m .fx { position: absolute; inset: 0; pointer-events: none; }
+.m .z { position: absolute; right: -.18em; top: -.08em; font: 700 .15em/1 -apple-system, sans-serif; color: var(--graphite); opacity: 0; }
+.m .z + .z { right: -.42em; top: -.3em; font-size: .11em; }
+.m[data-mood="sleep"] .z { opacity: .9; }
+.m.tiny { cursor: default; pointer-events: none; }
+.m.tiny .sh { display: none; }
+.m.tiny .z { color: rgba(255, 255, 255, .8); }
+/* Moving parts. Each candidate has one small thing that reacts to its mood. */
+.m { --fold: -152deg; --open: -4deg; --peel: 93deg; }
+.m[data-mood="happy"] { --fold: -112deg; --open: -20deg; --peel: 106deg; }
+.m[data-mood="drift"] { --fold: -132deg; --open: -9deg; --peel: 100deg; }
+.m[data-mood="sleep"] { --fold: -170deg; --open: 0deg; --peel: 91deg; }
+.m[data-mood="happy"] .cap { transform: translateY(-.08em) rotateZ(-8deg); }
+.m[data-mood="drift"] .cap { transform: translateY(-.03em) rotateZ(5deg); }
+@media (prefers-reduced-motion: no-preference) {
+  .m .part, .m .pl.hinge { transition: transform .45s cubic-bezier(.3, 1.5, .5, 1); }
+  .m .bl { transition: transform .06s ease-in; }
+  .m.seen:not(.tiny) .rig { animation: breathe 4.2s ease-in-out infinite; }
+  .m.hop .rig { animation: hop .62s both; }
+  .m.hop .sh { animation: hop-sh .62s both; }
+  .m:active:not(.held):not(.hop) .rig { animation: none; transform: scale(1.06, .92); transition: transform .1s cubic-bezier(.23, 1, .32, 1); }
+  .m.seen[data-mood="sleep"] .z { animation: zz 2.6s ease-in-out infinite; }
+  .m.seen[data-mood="sleep"] .z + .z { animation-delay: 1.3s; }
+  @keyframes breathe { 50% { transform: scale(1.012, .982); } }
+  @keyframes hop {
+    0% { transform: scale(1.1, .86); animation-timing-function: cubic-bezier(.2, .8, .4, 1); }
+    36% { transform: translateY(-.28em) scale(.95, 1.08); animation-timing-function: cubic-bezier(.6, 0, .9, .4); }
+    64% { transform: translateY(0) scale(1.08, .9); animation-timing-function: ease-out; }
+    84% { transform: scale(.985, 1.02); }
+    100% { transform: none; }
+  }
+  @keyframes hop-sh { 36% { transform: scale(.6); opacity: .45; } 64%, 100% { transform: none; opacity: 1; } }
+  @keyframes zz { 0% { opacity: 0; transform: translate(-.5em, .6em) scale(.7); } 30% { opacity: .9; } 100% { opacity: 0; transform: translate(.5em, -1em) scale(1.1); } }
+}
+
+/* Inside the gallery (index.html), the sheet shows only its candidates. */
+.embed body > header, .embed .bar, .embed body > footer { display: none; }
+.embed .grid { padding-block: 4px 8px; }
+.embed .wrap { padding-inline: 0; }
+</style>
+</head>
+<body>
+<header class="wrap">
+  <h1>Eight desk-object creatures</h1>
+  <p>Each one is an object from a study desk, made into a character in CSS 3D. They watch your pointer, lean in when you come close, look around on their own when you stop moving, hop when pressed and spin when dragged. These are the friendliest set; the black notch above each card shows it at its real size in the ear (20px).</p>
+</header>
+<div class="bar wrap" role="group" aria-label="Change the expression">
+  <span>All at once:</span>
+  <button type="button" class="mood" aria-pressed="true" data-mood="rest">Rest</button>
+  <button type="button" class="mood" aria-pressed="false" data-mood="happy">Glad</button>
+  <button type="button" class="mood" aria-pressed="false" data-mood="focus">Focus</button>
+  <button type="button" class="mood" aria-pressed="false" data-mood="drift">Drift</button>
+  <button type="button" class="mood" aria-pressed="false" data-mood="sleep">Break</button>
+  <button type="button" class="mood" aria-pressed="false" data-mood="thinking">Thinking</button>
+</div>
+<main class="wrap grid" id="grid"></main>
+
+<script>
+(function () {
+  'use strict';
+  var INK = '#14233B', PEN = '#1F4FD8', HL = '#FFE94A', PAPER = '#FFFFFF', RULE = '#D5DBE3';
+  var PINK = '#FF9EC4', PEACH = '#FFB89A', LIME = '#C6EF7A';
+  var still = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  // ---------- Building blocks. All sizes in em; x right, y down, z toward the viewer; 0 is the centre.
+  function E(v) { return (Math.round(v * 10000) / 10000) + 'em'; }
+  function T(x, y, z) { return 'translate3d(' + E(x || 0) + ',' + E(y || 0) + ',' + E(z || 0) + ') '; }
+  // Shade a colour toward ink (p > 0) or toward white (p < 0), in percent.
+  function mix(c, p) {
+    if (!p) return c;
+    return p > 0 ? 'color-mix(in srgb,' + c + ' ' + (100 - p) + '%,' + INK + ')' : 'color-mix(in srgb,' + c + ' ' + (100 + p) + '%,#fff)';
+  }
+  function P(o) {
+    var mt = o.mt != null ? o.mt : -o.h / 2, ml = o.ml != null ? o.ml : -o.w / 2;
+    return '<i class="pl' + (o.cls ? ' ' + o.cls : '') + '" style="width:' + E(o.w) + ';height:' + E(o.h) + ';margin:' + E(mt) + ' 0 0 ' + E(ml) + ';' +
+      (o.t ? 'transform:' + o.t + ';' : '') + (o.bg ? 'background:' + o.bg + ';' : '') + (o.css || '') + '">' + (o.html || '') + '</i>';
+  }
+  var SHADE = { front: 0, back: 24, right: 16, left: 7, top: -10, bottom: 30 };
+  function box(o) {
+    var t = T(o.x, o.y, o.z), w = o.w, h = o.h, d = o.d, f = o.f || {}, out = '';
+    var sides = {
+      front: [w, h, 'translateZ(' + E(d / 2) + ')'], back: [w, h, 'rotateY(180deg) translateZ(' + E(d / 2) + ')'],
+      right: [d, h, 'rotateY(90deg) translateZ(' + E(w / 2) + ')'], left: [d, h, 'rotateY(-90deg) translateZ(' + E(w / 2) + ')'],
+      top: [w, d, 'rotateX(90deg) translateZ(' + E(h / 2) + ')'], bottom: [w, d, 'rotateX(-90deg) translateZ(' + E(h / 2) + ')']
+    };
+    Object.keys(sides).forEach(function (k) {
+      var s = sides[k], fd = f[k] || {};
+      out += P({ w: s[0], h: s[1], t: t + s[2], bg: fd.bg || mix(o.c, SHADE[k]), css: (o.r ? 'border-radius:' + E(o.r) + ';' : '') + (fd.css || ''), html: fd.html });
+    });
+    return out;
+  }
+  // An upright prism with n sides; `a` is the distance from the axis to each side.
+  function shadeAt(deg) { var r = deg * Math.PI / 180; return Math.round(12 * (1 - Math.cos(r)) + 8 * Math.max(0, Math.sin(r))); }
+  function prism(o) {
+    var n = o.n, s = 2 * o.a * Math.tan(Math.PI / n), R = o.a / Math.cos(Math.PI / n), t = T(o.x, o.y, o.z), out = '', rot = o.rot || 0;
+    for (var i = 0; i < n; i++) {
+      var ang = i * 360 / n + rot;
+      out += P({ w: s + .003, h: o.h, t: t + 'rotateY(' + ang + 'deg) translateZ(' + E(o.a) + ')', bg: o.bg ? o.bg(shadeAt(ang)) : mix(o.c, shadeAt(ang)) });
+    }
+    var top = [], bottom = [];
+    for (var k = 0; k < n; k++) {
+      var th = ((k + .5) * 360 / n + rot) * Math.PI / 180;
+      top.push((50 + 50 * Math.sin(th)).toFixed(2) + '% ' + (50 + 50 * Math.cos(th)).toFixed(2) + '%');
+      bottom.push((50 + 50 * Math.sin(th)).toFixed(2) + '% ' + (50 - 50 * Math.cos(th)).toFixed(2) + '%');
+    }
+    out += P({ w: 2 * R, h: 2 * R, t: t + 'rotateX(90deg) translateZ(' + E(o.h / 2) + ')', bg: mix(o.c, -10), css: 'clip-path:polygon(' + top.join(',') + ')' });
+    out += P({ w: 2 * R, h: 2 * R, t: t + 'rotateX(-90deg) translateZ(' + E(o.h / 2) + ')', bg: mix(o.c, 30), css: 'clip-path:polygon(' + bottom.join(',') + ')' });
+    return out;
+  }
+  // A pyramid pointing up from y (its base) to y - len: the sharpened end of a pencil.
+  function cone(o) {
+    var n = o.n, s = 2 * o.a * Math.tan(Math.PI / n), L = Math.sqrt(o.len * o.len + o.a * o.a);
+    var tilt = Math.atan(o.a / o.len) * 180 / Math.PI, t = T(o.x, o.y, o.z), out = '';
+    for (var i = 0; i < n; i++) {
+      var ang = i * 360 / n;
+      out += P({ w: s + .003, h: L, mt: -L, t: t + 'rotateY(' + ang + 'deg) translateZ(' + E(o.a) + ') rotateX(' + tilt.toFixed(3) + 'deg)',
+        bg: o.bg(shadeAt(ang)), css: 'transform-origin:50% 100%;clip-path:polygon(50% 0,100% 100%,0 100%)' });
+    }
+    return out;
+  }
+  // A ball made of paper discs, crossed so it still reads as round when it turns.
+  function ball(o) {
+    var k = o.k || 7, t = T(o.x, o.y, o.z), out = '';
+    for (var i = 0; i < k; i++) {
+      var u = -1 + (2 * i + 1) / k, rr = o.r * Math.sqrt(1 - u * u);
+      out += P({ cls: 'two', w: 2 * rr, h: 2 * rr, t: t + 'translateZ(' + E(u * o.r) + ')', bg: mix(o.c, u > 0 ? -Math.round(u * 8) : Math.round(-u * 18)), css: 'border-radius:50%' });
+    }
+    out += P({ cls: 'two', w: 2 * o.r * .96, h: 2 * o.r * .96, t: t + 'rotateY(90deg)', bg: mix(o.c, 8), css: 'border-radius:50%' });
+    return out;
+  }
+  // The face sits on a flat plane, 100 x 64 units, in front of the surface it belongs to.
+  function face(o) {
+    return P({ w: o.w, h: o.w * .64, t: T(o.x, o.y, o.z), css: '--fi:' + (o.ink || INK), html: '<svg class="face" viewBox="0 0 100 64" aria-hidden="true"><g class="ft"></g></svg>' });
+  }
+  function part(cls, t, html) { return '<b class="part ' + cls + '" style="transform:' + t + '">' + html + '</b>'; }
+
+  // ---------- The face, drawn the same way for every candidate. Style changes spacing, size and extras.
+  function features(mood, st) {
+    var I = 'var(--fi)', g = st.gap, y = st.y, r = st.r, my = st.my, sw = st.sw || 4.6, L = 50 - g, R = 50 + g;
+    var pen = ' fill="none" stroke="' + I + '" stroke-width="' + sw + '" stroke-linecap="round" stroke-linejoin="round"';
+    var out = '';
+    if (st.cheeks !== false) {
+      out += '<g fill="' + PINK + '" opacity=".62"><ellipse cx="' + (L - r - 5) + '" cy="' + (y + 13) + '" rx="' + (r + 1.5) + '" ry="' + (r * .62) + '"/>' +
+        '<ellipse cx="' + (R + r + 5) + '" cy="' + (y + 13) + '" rx="' + (r + 1.5) + '" ry="' + (r * .62) + '"/></g>';
+    }
+    function eyes(ry, dx, dy) {
+      var s = '<g class="lk"><g class="bl">';
+      [L, R].forEach(function (x) {
+        s += '<ellipse cx="' + (x + dx) + '" cy="' + (y + dy) + '" rx="' + r + '" ry="' + ry.toFixed(2) + '" fill="' + I + '"/>';
+        if (st.glint !== false) s += '<circle cx="' + (x + dx - r * .35).toFixed(2) + '" cy="' + (y + dy - ry * .4).toFixed(2) + '" r="' + (r * .34).toFixed(2) + '" fill="#fff"/>';
+      });
+      return s + '</g></g>';
+    }
+    switch (mood) {
+      case 'happy':
+        out += '<path d="M' + (L - r) + ' ' + (y + 3) + 'Q' + L + ' ' + (y - 8) + ' ' + (L + r) + ' ' + (y + 3) + 'M' + (R - r) + ' ' + (y + 3) + 'Q' + R + ' ' + (y - 8) + ' ' + (R + r) + ' ' + (y + 3) + '"' + pen + '/>' +
+          '<path d="M43 ' + my + 'Q50 ' + (my + 13) + ' 57 ' + my + 'Z" fill="' + I + '" stroke="' + I + '" stroke-width="' + (sw * .7) + '" stroke-linejoin="round"/>';
+        break;
+      case 'focus':
+        out += '<path d="M' + (L - r - 2) + ' ' + (y - r - 7) + 'L' + (L + r + 1) + ' ' + (y - r - 3) + 'M' + (R + r + 2) + ' ' + (y - r - 7) + 'L' + (R - r - 1) + ' ' + (y - r - 3) + '"' + pen + '/>' +
+          eyes(r * 1.1, 0, 1) + '<path d="M45 ' + (my + 1) + 'Q50 ' + (my + 3) + ' 55 ' + (my + 1) + '"' + pen + '/>';
+        break;
+      case 'drift':
+        out += '<path d="M' + (L - r - 2) + ' ' + (y - r - 5) + 'L' + (L + r + 1) + ' ' + (y - r - 9) + 'M' + (R + r + 2) + ' ' + (y - r - 5) + 'L' + (R - r - 1) + ' ' + (y - r - 9) + '"' + pen + '/>' +
+          eyes(r * 1.5, 0, 0) + '<ellipse cx="50" cy="' + (my + 2) + '" rx="3.6" ry="4.3"' + pen + '/>';
+        break;
+      case 'sleep':
+        out += '<path d="M' + (L - r) + ' ' + y + 'Q' + L + ' ' + (y + 7) + ' ' + (L + r) + ' ' + y + 'M' + (R - r) + ' ' + y + 'Q' + R + ' ' + (y + 7) + ' ' + (R + r) + ' ' + y + '"' + pen + '/>' +
+          '<ellipse cx="50" cy="' + (my + 1) + '" rx="2.6" ry="3.2"' + pen + '/>';
+        break;
+      case 'thinking':
+        out += eyes(r * 1.2, 3, -3.5) + '<path d="M45 ' + (my + 1) + 'H55"' + pen + '/>';
+        break;
+      default:
+        out += eyes(r * 1.25, 0, 0) + '<path d="M44 ' + my + 'Q50 ' + (my + 7) + ' 56 ' + my + '"' + pen + '/>';
+    }
+    if (st.glasses) {
+      out += '<g fill="none" stroke="' + I + '" stroke-width="' + (sw * .62) + '" stroke-linecap="round"><circle cx="' + L + '" cy="' + y + '" r="' + (r + 7) + '"/>' +
+        '<circle cx="' + R + '" cy="' + y + '" r="' + (r + 7) + '"/><path d="M' + (L + r + 7) + ' ' + y + 'Q50 ' + (y - 4) + ' ' + (R - r - 7) + ' ' + y + '"/></g>';
+    }
+    return out;
+  }
+
+  // ---------- The candidates.
+  var KINDS = [
+    { id: 'pad', name: 'Note pad', tag: 'current', w: .8, h: 1,
+      idea: 'Paper you highlight the hard sentences on. The one on the site now.',
+      good: 'Tied directly to what the product does; the highlighter line and yellow corner are our colours.',
+      bad: 'A white rectangle, so when small it looks like plain paper.',
+      style: { gap: 20, r: 7, y: 30, my: 44, sw: 4.8 },
+      build: function () {
+        var out = '', n = 16, d = .3;
+        for (var i = 0; i < n; i++) {
+          out += P({ cls: 'two', w: .8, h: 1, t: 'translateZ(' + E((i / (n - 1) - .5) * d) + ')', bg: i < 3 ? INK : mix(PAPER, i % 2 ? 21 : 9), css: 'border-radius:.17em' });
+        }
+        out += P({ w: .8, h: 1, t: 'translateZ(' + E(d / 2 + .004) + ')', bg: PAPER, css: 'border-radius:.17em;clip-path:polygon(0 0,calc(100% - .27em) 0,100% .27em,100% 100%,0 100%);box-shadow:inset 0 0 0 .01em color-mix(in srgb,' + INK + ' 16%,transparent)' });
+        out += P({ w: .52, h: .085, t: T(0, .3, d / 2 + .006) + 'rotate(-2deg)', bg: HL, css: 'border-radius:.03em' });
+        out += face({ w: .66, y: .03, z: d / 2 + .008 });
+        out += part('flap', T(.265, -.365, d / 2 + .01), P({ cls: 'hinge two', w: .27, h: .27, t: 'rotate3d(1,1,0,var(--fold))', bg: 'linear-gradient(225deg,' + mix(HL, 24) + ' 0%,' + HL + ' 58%)', css: 'clip-path:polygon(0 0,100% 0,100% 100%)' }));
+        return out;
+      } },
+    { id: 'pen', name: 'Highlighter', w: .48, h: 1,
+      idea: 'Exactly what the product does: highlighting. Its cap pops when it smiles.',
+      good: 'The yellow cap stays recognisable when small.',
+      bad: 'Tall and thin, so the face is small; it must not resemble a pen maker’s design.',
+      style: { gap: 15, r: 6, y: 28, my: 45, sw: 4.6 },
+      build: function () {
+        return box({ y: .14, w: .4, h: .6, d: .3, c: PAPER, r: .02 }) +
+          P({ w: .4, h: .1, t: T(0, .34, .151), bg: HL }) +
+          face({ w: .38, y: .02, z: .152 }) +
+          box({ y: .465, w: .3, h: .05, d: .22, c: RULE }) +
+          part('cap', T(0, -.29, 0), box({ w: .42, h: .34, d: .32, c: HL, r: .03 }) + box({ x: .225, y: .02, w: .05, h: .26, d: .07, c: mix(HL, 18) }));
+      } },
+    { id: 'eraser', name: 'Eraser', w: 1.04, h: .6,
+      idea: 'The friend who erases mistakes. Chunky and solid.',
+      good: 'The simplest shape, clean at any size; the blue sleeve is our pen colour.',
+      bad: 'Less connected to asking and answering.',
+      style: { gap: 17, r: 6.5, y: 27, my: 44, sw: 4.8 },
+      build: function () {
+        return box({ x: -.02, w: 1, h: .54, d: .46, c: PAPER, r: .045 }) +
+          box({ x: .24, w: .5, h: .565, d: .485, c: PEN, r: .012 }) +
+          P({ w: .5, h: .04, t: T(.24, -.13, .2435), bg: PAPER }) +
+          P({ w: .5, h: .04, t: T(.24, .13, .2435), bg: PAPER }) +
+          face({ w: .42, x: -.27, y: .01, z: .232 });
+      } },
+    { id: 'book', name: 'Textbook', w: .72, h: .98,
+      idea: 'The book you are reading explains itself. Its cover opens when it smiles.',
+      good: 'Fits the “tool beside your textbook” story best.',
+      bad: 'The dark cover disappears in the black notch.',
+      style: { gap: 16, r: 6.5, y: 30, my: 45, sw: 4.8, glint: false },
+      build: function () {
+        var edges = 'repeating-linear-gradient(to right,' + PAPER + ' 0 .012em,' + mix(PAPER, 12) + ' .012em .017em)';
+        var edgesH = 'repeating-linear-gradient(to bottom,' + PAPER + ' 0 .012em,' + mix(PAPER, 12) + ' .012em .017em)';
+        var text = 'repeating-linear-gradient(to bottom,transparent 0 .055em,' + RULE + ' .055em .063em) .07em .1em / calc(100% - .14em) calc(100% - .2em) no-repeat,' + PAPER;
+        var spine = 'linear-gradient(to bottom,' + INK + ' 0 16%,' + HL + ' 16% 20%,' + INK + ' 20% 80%,' + HL + ' 80% 84%,' + INK + ' 84%)';
+        return box({ x: .02, w: .63, h: .86, d: .17, c: PAPER, f: { right: { bg: edges }, top: { bg: edgesH }, bottom: { bg: edgesH }, front: { bg: text } } }) +
+          P({ w: .68, h: .92, t: T(0, 0, -.1) + 'rotateY(180deg)', bg: INK, css: 'border-radius:.03em' }) +
+          P({ w: .2, h: .92, t: T(-.34, 0, 0) + 'rotateY(-90deg)', bg: spine }) +
+          P({ w: .05, h: .16, t: T(.17, .52, .02), bg: HL, css: 'clip-path:polygon(0 0,100% 0,100% 100%,50% 80%,0 100%)' }) +
+          part('cover', T(-.34, 0, .1), P({ cls: 'hinge', w: .68, h: .92, ml: 0, t: 'rotateY(var(--open))', bg: INK,
+            css: 'transform-origin:0 50%;border-radius:0 .03em .03em 0;--fi:' + PAPER,
+            html: '<span style="position:absolute;left:20%;right:20%;top:13%;height:8%;background:' + HL + ';border-radius:.015em"></span>' +
+              '<svg class="face" viewBox="0 0 100 64" aria-hidden="true" style="inset:auto;top:30%;left:6%;width:88%;height:auto"><g class="ft"></g></svg>' }));
+      } },
+    { id: 'sticky', name: 'Sticky-note cube', w: .86, h: .8,
+      idea: 'A block of notes to stick questions on. The top sheet lifts when it smiles.',
+      good: 'A yellow block, the most visible in the notch.',
+      bad: 'So much yellow clashes with the “use yellow sparingly” rule.',
+      style: { gap: 17, r: 6.5, y: 28, my: 44, sw: 4.8 },
+      build: function () {
+        function stripes(p) { return 'repeating-linear-gradient(to bottom,' + mix(HL, p) + ' 0 .034em,' + mix(HL, p + 14) + ' .034em .04em)'; }
+        return box({ y: .08, w: .8, h: .6, d: .8, c: HL, f: { front: { bg: stripes(0) }, right: { bg: stripes(14) }, left: { bg: stripes(6) }, back: { bg: stripes(22) }, top: { bg: mix(HL, -18) } } }) +
+          part('peel', T(0, -.224, 0), P({ cls: 'hinge two', w: .8, h: .8, mt: 0, ml: -.4, t: 'translateZ(-.4em) rotateX(var(--peel))', bg: mix(HL, -26), css: 'transform-origin:50% 0' })) +
+          face({ w: .52, y: .1, z: .402 });
+      } },
+    { id: 'pencil', name: 'Pencil stub', w: .62, h: .96,
+      idea: 'A pencil worn short from studying to the end; its point looks like a hat.',
+      good: 'The clearest silhouette; the eraser feet are charming.',
+      bad: 'Six narrow faces leave little room for a face; very small, it becomes a yellow stick.',
+      style: { gap: 14, r: 5.5, y: 28, my: 45, sw: 4.4 },
+      build: function () {
+        var a = .27;
+        return cone({ y: -.1, n: 6, a: a, len: .34, bg: function (p) { return 'linear-gradient(to top,' + mix(PEACH, p) + ' 0 70%,' + mix(INK, p) + ' 70%)'; } }) +
+          prism({ y: .1, n: 6, a: a, h: .4, c: HL }) +
+          face({ w: .3, y: .09, z: a + .004 }) +
+          prism({ y: .335, n: 6, a: a + .006, h: .07, c: RULE }) +
+          prism({ y: .42, n: 6, a: a - .01, h: .1, c: PINK });
+      } },
+    { id: 'ink', name: 'Inkwell', w: .66, h: .94,
+      idea: 'Blue-black ink, where our colours come from. Its cap pops when it smiles.',
+      good: 'The white label becomes the face, so expressions read well.',
+      bad: 'A blue block adds one more colour between the notch black and highlighter yellow.',
+      style: { gap: 16, r: 6.5, y: 29, my: 45, sw: 4.8 },
+      build: function () {
+        var ridges = 'repeating-linear-gradient(to right,' + INK + ' 0 .02em,' + mix(INK, -16) + ' .02em .03em)';
+        return box({ y: .2, w: .62, h: .54, d: .62, c: PEN, r: .04 }) +
+          P({ w: .5, h: .34, t: T(0, .21, .312), bg: PAPER, css: 'border-radius:.025em;box-shadow:inset 0 0 0 .008em ' + RULE }) +
+          face({ w: .46, y: .2, z: .314 }) +
+          box({ y: -.1, w: .46, h: .07, d: .46, c: mix(PEN, 12), r: .02 }) +
+          box({ y: -.17, w: .24, h: .08, d: .24, c: PEN }) +
+          part('cap', T(0, -.3, 0), box({ w: .32, h: .2, d: .32, c: INK, r: .015, f: { front: { bg: ridges }, right: { bg: ridges }, left: { bg: ridges } } }));
+      } },
+    { id: 'worm', name: 'Bookworm', w: .92, h: .94,
+      idea: 'Literally the word for a keen student. It peeks out of a book.',
+      good: 'An animal, so the friendliest; one pair of glasses gives it character.',
+      bad: 'The most complex to build; its round head must not resemble other apps’ round characters.',
+      style: { gap: 17, r: 6, y: 30, my: 47, sw: 4.6, glasses: true },
+      build: function () {
+        var pages = 'repeating-linear-gradient(to bottom,' + PAPER + ' 0 .014em,' + mix(PAPER, 12) + ' .014em .019em)';
+        return box({ y: .39, w: .9, h: .14, d: .6, c: INK, r: .015, f: { front: { bg: pages }, right: { bg: pages }, left: { bg: pages } } }) +
+          P({ w: .05, h: .14, t: T(.26, .5, .302), bg: HL, css: 'clip-path:polygon(0 0,100% 0,100% 100%,50% 80%,0 100%)' }) +
+          ball({ x: .24, y: .24, z: -.08, r: .1, c: LIME }) +
+          ball({ x: .13, y: .12, z: -.02, r: .13, c: LIME }) +
+          ball({ x: .02, y: -.03, z: .03, r: .15, c: LIME }) +
+          ball({ x: -.07, y: -.21, z: .07, r: .2, c: LIME, k: 8 }) +
+          face({ w: .4, x: -.07, y: -.2, z: .275 });
+      } }
+  ];
+
+  // ---------- One frame loop for every character; it sleeps when nothing moves.
+  var jobs = [], raf = 0, last = 0, pointer = null, clock = 0;
+  function frame(now) {
+    var dt = Math.min(.034, Math.max(.001, (now - last) / 1000));
+    last = now; raf = 0; clock += dt;
+    var busy = false;
+    for (var i = 0; i < jobs.length; i++) if (jobs[i](dt)) busy = true;
+    if (busy) raf = requestAnimationFrame(frame);
+  }
+  function wake() { if (raf || document.hidden) return; last = performance.now() - 16; raf = requestAnimationFrame(frame); }
+  window.addEventListener('pointermove', function (e) { pointer = { x: e.clientX, y: e.clientY }; lastMove = performance.now(); wake(); }, { passive: true });
+  document.documentElement.addEventListener('pointerleave', function () { pointer = null; wake(); });
+  window.addEventListener('scroll', wake, { passive: true });
+  document.addEventListener('visibilitychange', wake);
+
+  // Life: when you stop moving, it looks around on its own (each at its own pace); when you come close, it leans in.
+  var lastMove = 0;
+  function life(m, resting) {
+    var idle = !pointer || performance.now() - lastMove > 2600, out = { follow: !idle && !m.tiny, near: 0, wx: 0, wy: 0, ex: 0, ey: 0 };
+    if (still.matches || resting) { out.follow = false; return out; }
+    if (!out.follow) {
+      var w = clock + m.seed;
+      out.wy = 17 * Math.sin(w * .33) + 6 * Math.sin(w * .91 + 1.3);
+      out.wx = 6 * Math.sin(w * .47 + .7);
+      out.ex = .7 * Math.sin(w * .33) + .25 * Math.sin(w * 1.7);
+      out.ey = .35 * Math.sin(w * .52 + 2);
+    } else {
+      var r = m.el.getBoundingClientRect(), d = Math.hypot(pointer.x - (r.left + r.width / 2), pointer.y - (r.top + r.height / 2));
+      out.near = clamp(1 - d / 320, 0, 1);
+    }
+    return out;
+  }
+  function spring(s, to, dt) {
+    s.v += ((to - s.x) * 110 - s.v * 13) * dt; s.x += s.v * dt;
+    if (Math.abs(to - s.x) < .06 && Math.abs(s.v) < .5) { s.x = to; s.v = 0; return false; }
+    return true;
+  }
+  function clamp(v, lo, hi) { return v < lo ? lo : v > hi ? hi : v; }
+  var LEAN = { happy: { z: -5, x: 0, y: 0 }, drift: { z: 5, x: 0, y: 10 }, sleep: { z: 3, x: -9, y: 0 }, thinking: { z: 4, x: 7, y: 6 } };
+
+  function Mascot(el, kind, tiny) {
+    var self = this;
+    this.el = el; this.kind = kind; this.mood = 'rest'; this.flash = null; this.hover = false; this.seen = true;
+    this.pose = { x: 5, y: -16, z: 0, ex: 0, ey: 0 }; this.spin = { x: 0, v: 0 }; this.spinTo = 0; this.drag = null; this.seed = Math.random() * 100; this.tiny = tiny;
+    el.innerHTML = '<span class="sh"></span><span class="rig"><span class="body">' + kind.build() + '</span></span>' +
+      '<span class="fx" aria-hidden="true"><span class="z">z</span><span class="z">z</span></span>';
+    el.style.width = E(kind.w); el.style.height = E(kind.h);
+    this.body = el.querySelector('.body');
+    this.fts = el.querySelectorAll('.ft');
+    this.draw();
+    if (tiny) { jobs.push(function (dt) { return self.step(dt); }); return; }
+
+    el.addEventListener('pointerenter', function (e) { if (e.pointerType !== 'touch') { self.hover = true; self.draw(); } });
+    el.addEventListener('pointerleave', function () { self.hover = false; self.draw(); });
+    el.addEventListener('pointerdown', function (e) {
+      if (e.button) return;
+      self.drag = { id: e.pointerId, x: e.clientX, t: e.timeStamp, moved: 0, v: 0, held: false };
+      try { el.setPointerCapture(e.pointerId); } catch (err) { /* already gone */ }
+    });
+    el.addEventListener('pointermove', function (e) {
+      var d = self.drag;
+      if (!d || e.pointerId !== d.id || still.matches) return;
+      if (e.pointerType === 'mouse' && !(e.buttons & 1)) { release(e); return; }
+      var dx = e.clientX - d.x, dt = Math.max(1, e.timeStamp - d.t);
+      d.moved += Math.abs(dx);
+      if (!d.held && d.moved > 6) { d.held = true; el.classList.add('held'); }
+      if (d.held) { self.spin.x += dx * .9; self.spin.v = 0; d.v = d.v * .6 + (dx * .9 / dt * 1000) * .4; wake(); }
+      d.x = e.clientX; d.t = e.timeStamp;
+    });
+    function release(e) {
+      var d = self.drag;
+      if (!d || (e && e.pointerId !== d.id)) return;
+      self.drag = null; el.classList.remove('held');
+      if (!d.held) return;
+      self.dragged = true; setTimeout(function () { self.dragged = false; }, 80);
+      var v = clamp(d.v, -1400, 1400);
+      self.spin.v = v; self.spinTo = Math.round((self.spin.x + v * .3) / 360) * 360; wake();
+    }
+    el.addEventListener('pointerup', release);
+    el.addEventListener('pointercancel', release);
+    el.addEventListener('click', function (e) { if (self.dragged) { e.preventDefault(); return; } self.pat(); });
+    el.addEventListener('animationend', function (e) { if (e.animationName === 'hop') el.classList.remove('hop'); });
+    new IntersectionObserver(function (en) {
+      self.seen = en[0].isIntersecting; el.classList.toggle('seen', self.seen);
+      if (self.seen) { wake(); self.blinkSoon(); }
+    }).observe(el);
+    jobs.push(function (dt) { return self.step(dt); });
+  }
+  Mascot.prototype.shown = function () {
+    if (this.flash) return this.flash;
+    if (this.hover && this.mood !== 'thinking') return 'happy';
+    return this.mood;
+  };
+  Mascot.prototype.draw = function () {
+    var mood = this.shown();
+    if (mood === this.drawn) return;
+    this.drawn = mood;
+    var html = features(mood, this.kind.style);
+    Array.prototype.forEach.call(this.fts, function (g) { g.innerHTML = html; });
+    this.el.setAttribute('data-mood', mood);
+    this.eyes = this.el.querySelectorAll('.lk');
+    this.pose.ex = this.pose.ey = 0;
+    wake();
+  };
+  Mascot.prototype.setMood = function (m) { this.mood = m; this.draw(); };
+  Mascot.prototype.blinkSoon = function () {
+    var self = this;
+    clearTimeout(this.blinkTimer);
+    if (still.matches) return;
+    this.blinkTimer = setTimeout(function () {
+      if (!self.seen || document.hidden) return;
+      self.el.classList.add('blink');
+      setTimeout(function () { self.el.classList.remove('blink'); }, 130);
+      self.blinkSoon();
+    }, 3000 + Math.random() * 3000);
+  };
+  Mascot.prototype.pat = function () {
+    var self = this;
+    if (this.mood !== 'thinking') {
+      this.flash = 'happy'; clearTimeout(this.flashTimer);
+      this.flashTimer = setTimeout(function () { self.flash = null; self.draw(); }, 1300);
+      this.draw();
+    }
+    if (still.matches) return;
+    this.el.classList.add('hop');
+    if (this.spinTo - this.spin.x < 180) this.spinTo += 360;
+    wake();
+  };
+  Mascot.prototype.step = function (dt) {
+    if (!this.seen) return false;
+    var mood = this.shown(), lean = LEAN[mood] || { z: 0, x: 0, y: 0 }, p = this.pose, busy = false;
+    var tx = 5, ty = -16, ex = 0, ey = 0, held = this.drag && this.drag.held;
+    var L = life(this, held || mood === 'sleep');
+    if (!L.follow) {
+      ty += L.wy; tx += L.wx;
+      if (mood !== 'thinking') { ex = L.ex * 3.4; ey = L.ey * 2.8; }
+      if (!still.matches && !held && mood !== 'sleep') busy = true;
+    }
+    if (L.follow && !held && mood !== 'sleep') {
+      var r = this.el.getBoundingClientRect(), reach = Math.max(240, r.height * 2.2);
+      var nx = clamp((pointer.x - (r.left + r.width / 2)) / reach, -1, 1), ny = clamp((pointer.y - (r.top + r.height / 2)) / reach, -1, 1);
+      ty = nx * 30; tx = -ny * 20;
+      if (mood !== 'thinking') { ex = nx * 3.4; ey = ny * 2.8; }
+    }
+    tx += lean.x; ty += lean.y;
+    p.s = p.s || 1;
+    if (still.matches) { p.x = tx; p.y = ty; p.z = lean.z; p.ex = ex; p.ey = ey; p.s = 1; this.spin.x = this.spinTo = 0; }
+    else {
+      var k = 1 - Math.exp(-dt * 9);
+      p.s += ((1 + .07 * L.near) - p.s) * k;
+      p.x += (tx - p.x) * k; p.y += (ty - p.y) * k; p.z += (lean.z - p.z) * k;
+      p.ex += (ex - p.ex) * k * 1.6; p.ey += (ey - p.ey) * k * 1.6;
+      if (Math.abs(tx - p.x) + Math.abs(ty - p.y) + Math.abs(lean.z - p.z) > .08 || Math.abs(ex - p.ex) + Math.abs(ey - p.ey) > .03) busy = true;
+      if (!held && spring(this.spin, this.spinTo, dt)) busy = true;
+      if (!busy && !held && this.spin.x !== 0) this.spin.x = this.spinTo = 0;
+    }
+    this.body.style.transform = 'scale(' + p.s.toFixed(3) + ') rotateZ(' + p.z.toFixed(2) + 'deg) rotateX(' + p.x.toFixed(2) + 'deg) rotateY(' + (p.y + this.spin.x).toFixed(2) + 'deg)';
+    var t = 'translate(' + p.ex.toFixed(2) + 'px,' + p.ey.toFixed(2) + 'px)';
+    Array.prototype.forEach.call(this.eyes, function (g) { g.style.transform = t; });
+    return busy;
+  };
+
+  // ---------- The page.
+  var grid = document.getElementById('grid'), all = [];
+  var RING = '<svg viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="5" fill="none" stroke="rgba(255,255,255,.18)" stroke-width="2"/><circle cx="6" cy="6" r="5" fill="none" stroke="#FFE94A" stroke-width="2" stroke-linecap="round" stroke-dasharray="11.3 31.4" transform="rotate(-90 6 6)"/></svg>';
+  KINDS.forEach(function (kind, i) {
+    var letter = String.fromCharCode(65 + i);
+    var fig = document.createElement('figure');
+    fig.className = 'cand';
+    fig.innerHTML =
+      '<div class="stage"><div class="notch" aria-hidden="true"><span class="ear"><span class="m tiny"></span></span><span class="ear">' + RING + '33m</span></div>' +
+      '<button type="button" class="m big" aria-label="Candidate ' + letter + ', ' + kind.name + '. Press it to make it hop; drag it to spin it."></button></div>' +
+      '<figcaption><h2><b>' + letter + '</b>' + kind.name + (kind.tag ? ' <small>' + kind.tag + '</small>' : '') + '</h2><p>' + kind.idea + '</p>' +
+      '<dl><dt>Good</dt><dd>' + kind.good + '</dd><dt>Watch out</dt><dd>' + kind.bad + '</dd></dl></figcaption>';
+    grid.appendChild(fig);
+    var tinyEl = fig.querySelector('.m.tiny');
+    tinyEl.style.fontSize = Math.min(20 / kind.h, 30 / kind.w).toFixed(2) + 'px';
+    all.push(new Mascot(fig.querySelector('.m.big'), kind, false));
+    all.push(new Mascot(tinyEl, kind, true));
+  });
+  wake();
+
+  var moods = Array.prototype.slice.call(document.querySelectorAll('.mood'));
+  moods.forEach(function (b) {
+    b.addEventListener('click', function () {
+      moods.forEach(function (o) { o.setAttribute('aria-pressed', o === b ? 'true' : 'false'); });
+      all.forEach(function (m) { m.setMood(b.getAttribute('data-mood')); });
+    });
+  });
+})();
+</script>
+<script>
+/* When this sheet sits inside the gallery (opened as file#embed): hide its own header and state bar, tell the gallery
+   its height, and take state changes from the gallery's one state bar. */
+(function () {
+  if (location.hash !== '#embed') return;
+  document.documentElement.classList.add('embed');
+  function send() { parent.postMessage({ sheetHeight: document.documentElement.scrollHeight }, '*'); }
+  window.addEventListener('load', send);
+  window.addEventListener('resize', send);
+  if ('ResizeObserver' in window) new ResizeObserver(send).observe(document.body);
+  window.addEventListener('message', function (e) {
+    var s = e.data && e.data.state;
+    if (!s) return;
+    var names = s === 'think' ? ['think', 'thinking'] : [s], button = null;
+    names.some(function (n) { button = document.querySelector('.state[data-state="' + n + '"], .mood[data-mood="' + n + '"]'); return !!button; });
+    if (button) button.click();
+  });
+})();
+</script>
+</body>
+</html>

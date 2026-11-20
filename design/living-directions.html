@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Living 2D creatures</title>
+<meta name="description" content="Eight StudyNotch mascot candidates that feel alive without being cute. They breathe, blink and watch your pointer.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hahmlet:wght@700&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
+<style>
+/* DESIGN.md colours only: paper, desk, ink, graphite, rule, highlighter, pen blue, and the island's state colours. */
+:root { --paper: #FFFFFF; --desk: #EDF0F3; --ink: #14233B; --graphite: #566173; --rule: #D5DBE3; --hl: #FFE94A; color-scheme: light; }
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 400 16px/1.65 "IBM Plex Sans KR", -apple-system, "Apple SD Gothic Neo", sans-serif; word-break: keep-all; -webkit-font-smoothing: antialiased; }
+.wrap { width: min(1264px, 100%); margin-inline: auto; padding-inline: 24px; }
+@media (max-width: 560px) { .wrap { padding-inline: 16px; } }
+header { padding-block: 48px 20px; display: grid; gap: 14px; }
+h1 { margin: 0; font: 700 clamp(30px, 4vw, 46px)/1.2 "Hahmlet", serif; letter-spacing: -.02em; }
+header > p { margin: 0; color: var(--graphite); max-width: 46em; }
+:focus-visible { outline: 2px solid #1F4FD8; outline-offset: 3px; border-radius: 6px; }
+.pick { display: grid; gap: 6px; padding: 20px 24px; border: 1px solid var(--ink); border-radius: 14px; }
+.pick h2 { margin: 0; font: 700 20px/1.35 "Hahmlet", serif; }
+.pick p { margin: 0; color: var(--graphite); font-size: 15px; max-width: 60em; }
+
+/* One state bar drives every candidate, so they can be compared doing the same thing. */
+.bar { position: sticky; top: 0; z-index: 5; background: var(--paper); padding-block: 14px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; border-bottom: 1px solid var(--rule); }
+.bar span { color: var(--graphite); font-size: 14.5px; margin-right: 6px; }
+.state { min-height: 44px; padding: 0 16px; border: 1px solid var(--rule); border-radius: 10px; background: var(--paper); color: var(--ink); font: 500 15px/1 inherit; font-family: inherit; cursor: pointer; transition: background-color .15s, border-color .15s, color .15s; }
+.state[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: #fff; }
+@media (hover: hover) and (pointer: fine) { .state:hover { border-color: var(--ink); } }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 282px), 1fr)); gap: 18px; padding-block: 22px 40px; }
+.card { margin: 0; border: 1px solid var(--rule); border-radius: 16px; overflow: hidden; display: grid; grid-template-rows: auto 1fr; }
+.plate { position: relative; height: 240px; background: var(--desk); display: grid; place-items: center; }
+.big { width: 240px; height: 150px; margin-top: 36px; color: var(--ink); --bg: var(--desk); overflow: visible; }
+.notch { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 220px; height: 32px; background: #000; border-radius: 0 0 12px 12px;
+  display: flex; align-items: center; justify-content: space-between; padding-inline: 20px; color: #F5F6F8; font: 600 12px/1 -apple-system, BlinkMacSystemFont, sans-serif; font-variant-numeric: tabular-nums; }
+.tiny { height: 18px; width: auto; max-width: 40px; color: #F5F6F8; --bg: #000; overflow: visible; }
+.card figcaption { padding: 16px 18px 20px; display: grid; gap: 8px; align-content: start; }
+.card h3 { margin: 0; font: 700 18px/1.35 "Hahmlet", serif; display: flex; gap: 10px; align-items: baseline; }
+.card h3 b { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--ink); color: #fff; font: 600 12px/1 "IBM Plex Sans KR", sans-serif; flex: none; transform: translateY(-2px); }
+.card dl { margin: 0; display: grid; grid-template-columns: 6.6em 1fr; gap: 5px 10px; font-size: 14.5px; line-height: 1.55; }
+.card dt { color: var(--graphite); }
+.card dd { margin: 0; }
+footer { padding-block: 8px 64px; color: var(--graphite); font-size: 14px; max-width: 60em; }
+
+/* Life: a blink every few seconds, a slow breath. Nothing moves when motion is reduced. */
+.blink { transform-box: fill-box; transform-origin: center; }
+.sq { transform-box: fill-box; transform-origin: center; }
+@media (prefers-reduced-motion: no-preference) {
+  .blink { animation: blink 5.2s infinite; }
+  .card:nth-child(2n) .blink { animation-delay: -2.1s; }
+  .card:nth-child(3n) .blink { animation-delay: -3.7s; }
+  @keyframes blink { 0%, 93%, 100% { transform: scaleY(1); } 95.5% { transform: scaleY(.1); } }
+  .breathe { transform-box: fill-box; transform-origin: 50% 100%; animation: breathe 4.4s ease-in-out infinite; }
+  @keyframes breathe { 50% { transform: scale(1.03, .975); } }
+}
+@media (prefers-reduced-motion: reduce) { svg animate, svg animateTransform, svg animateMotion { display: none; } }
+
+/* Inside the gallery (index.html), the sheet shows only its candidates. */
+.embed body > header, .embed .bar, .embed body > footer { display: none; }
+.embed .grid { padding-block: 4px 8px; }
+.embed .wrap { padding-inline: 0; }
+</style>
+</head>
+<body>
+<header class="wrap">
+  <h1>Alive, not cute: eight flat creatures</h1>
+  <p>Feeling alive comes from motion more than from a face. These breathe, blink, watch your pointer, glance around on their own when you stop moving, and change their gestures with each state. Cheeks, big smiles and round bodies are left out. The black notch above each card shows it at real size (18px).</p>
+  <div class="pick">
+    <h2>Pick: ② Inchworm line</h2>
+    <p>The highlighter line itself is the creature. What the product does (highlighting) and being alive are one body, so it needs no explanation, and with a single dot for an eye it stays tidy. It reads clearly as one line in an 18px notch and does not overlap other notch apps’ characters. ① Notch eyes is the most Apple-like, but eyes in the notch are already used by several other notch apps.</p>
+  </div>
+</header>
+<div class="bar wrap" role="group" aria-label="Change the state">
+  <span>All at once:</span>
+  <button type="button" class="state" aria-pressed="true" data-state="rest">Rest</button>
+  <button type="button" class="state" aria-pressed="false" data-state="focus">Focus</button>
+  <button type="button" class="state" aria-pressed="false" data-state="think">Answering</button>
+  <button type="button" class="state" aria-pressed="false" data-state="drift">Drift</button>
+  <button type="button" class="state" aria-pressed="false" data-state="sleep">Break</button>
+</div>
+<main class="wrap grid" id="grid"></main>
+<footer class="wrap">Drafts. Whichever direction is chosen gets checked against similar characters and trademarks before it goes into the app or the site. The motion only shows when this file is open.</footer>
+
+<script>
+(function () {
+  'use strict';
+  var INK = '#14233B', HL = '#FFE94A', PEN = '#1F4FD8', RULE = '#D5DBE3', W = '#F5F6F8';
+  var C = { focus: '#7CE38B', think: '#C9A6FF', drift: '#FFB25E' };
+  function A(attr, values, dur, extra) { return '<animate attributeName="' + attr + '" values="' + values + '" dur="' + dur + '" repeatCount="indefinite"' + (extra || '') + '/>'; }
+  function R(values, dur, extra) { return '<animateTransform attributeName="transform" type="rotate" values="' + values + '" dur="' + dur + '" repeatCount="indefinite"' + (extra || '') + '/>'; }
+  function Tr(values, dur, extra) { return '<animateTransform attributeName="transform" type="translate" values="' + values + '" dur="' + dur + '" repeatCount="indefinite"' + (extra || '') + '/>'; }
+  var EASE = ' calcMode="spline" keySplines=".45 0 .55 1;.45 0 .55 1"';
+  var EASE3 = ' calcMode="spline" keySplines=".45 0 .55 1;.45 0 .55 1;.45 0 .55 1"';
+  // Text lines on a page, for the creatures that live on one.
+  function lines(y0) { return '<g fill="' + RULE + '">' + [0, 1, 2].map(function (i) { return '<rect x="34" y="' + (y0 + i * 12) + '" width="' + (92 - i * 14) + '" height="3.5" rx="1.75"/>'; }).join('') + '</g>'; }
+  // `look` groups turn toward the pointer; data-amp is how far, in drawing units.
+  function look(amp, inner) { return '<g class="look" data-amp="' + amp + '">' + inner + '</g>'; }
+
+  var KINDS = [
+    { name: 'Notch eyes', box: '50 32 60 36',
+      life: 'Two white eyes inside the black notch. They blink and watch your pointer; only their shape changes with the state.',
+      states: 'In focus they narrow and look down; answering, they look up while a line draws beneath them; drifting, they widen and turn amber; on a break they close.',
+      fit: 'The most Apple-like and clear at 18px, but eyes in the notch are used by other apps too.',
+      draw: function (s, tiny) {
+        var sy = { rest: 1, focus: .5, think: 1, drift: 1.2, sleep: .12 }[s], col = s === 'drift' ? C.drift : W;
+        var dx = s === 'think' ? 4 : s === 'drift' ? -6 : 0, dy = s === 'think' ? -4 : s === 'focus' ? 3 : 0;
+        var eye = function (x) { return '<rect x="' + (x - 5) + '" y="42" width="10" height="16" rx="5" fill="' + col + '"/>'; };
+        var out = tiny ? '' : '<rect x="20" y="28" width="120" height="44" rx="22" fill="#000"/>';
+        out += '<g transform="translate(' + dx + ' ' + dy + ')">' + look(4, '<g class="sq" style="transform:scaleY(' + sy + ')"><g class="' + (s === 'sleep' ? '' : 'blink') + '">' + eye(69) + eye(91) + '</g></g>') + '</g>';
+        if (s === 'think' && !tiny) out += '<rect x="62" y="63" width="36" height="3" rx="1.5" fill="' + HL + '">' + A('width', '3;36;36', '1.5s', ' keyTimes="0;.7;1"') + '</rect>';
+        if (s === 'sleep') out += '<g>' + A('opacity', '1;.45;1', '5s') + '</g>';
+        return out;
+      } },
+    { name: 'Inchworm line', box: '30 18 104 64',
+      life: 'The highlighter line arches and stretches like an inchworm, with one eye at the head.',
+      states: 'In focus it lies flat on a line of text and only breathes; answering, it moves back and forth along the line; drifting, it rears up, looks around and turns amber; on a break it curls into a ring.',
+      fit: 'The product’s line and life in one body: the most our own, and clear even when small.',
+      draw: function (s, tiny) {
+        var col = s === 'drift' ? C.drift : HL, out = tiny ? '' : (s === 'focus' || s === 'think' ? lines(56) : '');
+        var flat = 'M40 70C60 70 100 70 120 70', arch = 'M58 70C64 28 112 28 120 70';
+        var eye = function (x, y) { return '<circle cx="' + x + '" cy="' + y + '" r="2.8" fill="' + INK + '"/>'; };
+        if (s === 'rest') {
+          out += '<path d="' + flat + '" fill="none" stroke="' + col + '" stroke-width="9" stroke-linecap="round">' + A('d', flat + ';' + arch + ';' + flat, '3.2s', EASE + ' keyTimes="0;.5;1"') + '</path>' + eye(117, 68);
+        } else if (s === 'focus') {
+          out += '<path d="M36 69H118" fill="none" stroke="' + col + '" stroke-width="9" stroke-linecap="round">' + A('stroke-width', '9;10.5;9', '4s') + '</path>' + eye(115, 70);
+        } else if (s === 'think') {
+          out += '<g>' + Tr('0 0;-26 0;0 0', '1.6s', EASE + ' keyTimes="0;.5;1"') + '<path d="' + flat + '" fill="none" stroke="' + col + '" stroke-width="9" stroke-linecap="round">' +
+            A('d', flat + ';' + arch + ';' + flat, '.8s', EASE + ' keyTimes="0;.5;1"') + '</path>' + eye(117, 68) + '</g>';
+        } else if (s === 'drift') {
+          out += '<path d="M40 72C70 72 96 72 104 66" fill="none" stroke="' + col + '" stroke-width="9" stroke-linecap="round"/>' +
+            '<g>' + R('-10 104 66;12 104 66;-10 104 66', '2.6s', EASE + ' keyTimes="0;.5;1"') + '<path d="M104 66C112 58 114 46 116 36" fill="none" stroke="' + col + '" stroke-width="9" stroke-linecap="round"/>' + eye(117, 37) + '</g>';
+        } else {
+          out += '<path d="M100 70A20 20 0 1 1 97 57" fill="none" stroke="' + col + '" stroke-width="9" stroke-linecap="round">' + A('stroke-width', '8;10;8', '5s') + '</path>' + eye(96, 57);
+        }
+        return out;
+      } },
+    { name: 'Breathing light', box: '58 26 44 48',
+      life: 'A light that breathes like a MacBook’s sleep indicator. No eyes, no body: alive through breathing alone.',
+      states: 'In focus it glows green, low and even; answering, violet and fast; drifting, it throbs amber; on a break it fades very slowly.',
+      fit: 'The quietest and most professional, but with the weakest sense of “someone”.',
+      draw: function (s, tiny) {
+        var col = C[s] || W, dur = { rest: '4.4s', focus: '6s', think: '1.2s', drift: '1.5s', sleep: '7s' }[s], lo = { focus: '.7', sleep: '.15' }[s] || '.3';
+        var out = tiny ? '' : '<rect x="20" y="28" width="120" height="44" rx="22" fill="#000"/>';
+        out += '<g>' + A('opacity', lo + ';1;' + lo, dur, EASE + ' keyTimes="0;.5;1"') +
+          '<circle cx="80" cy="50" r="15" fill="' + col + '" opacity=".22">' + A('r', '11;17;11', dur, EASE + ' keyTimes="0;.5;1"') + '</circle>' +
+          '<circle cx="80" cy="50" r="8.5" fill="' + col + '" opacity=".5"/><circle cx="80" cy="50" r="4.5" fill="' + col + '"/></g>';
+        return out;
+      } },
+    { name: 'Ink drop', box: '46 12 68 86',
+      life: 'A drop of blue-black ink that sloshes like liquid, with two white eyes that blink and watch your pointer.',
+      states: 'In focus its eyes narrow; answering, a highlighter drop forms beneath it; drifting, it tilts and its eyes widen; on a break it spreads flat and only breathes.',
+      fit: 'Ink is where our colours come from, which makes a good story. Its round body has to keep sharp lines so it does not tip into cute.',
+      draw: function (s, tiny) {
+        var drop = 'M80 16C80 16 108 48 108 66A28 28 0 0 1 52 66C52 48 80 16 80 16Z', squash = 'M80 20C80 20 110 50 110 68A30 26 0 0 1 50 68C50 50 80 20 80 20Z';
+        var puddle = 'M80 44C80 44 114 60 114 72A34 18 0 0 1 46 72C46 60 80 44 80 44Z';
+        var sy = { rest: 1, focus: .5, think: 1, drift: 1.25, sleep: .12 }[s], dx = s === 'think' ? 3 : s === 'drift' ? -5 : 0, dy = s === 'think' ? -4 : s === 'focus' ? 2 : 0;
+        var ey = s === 'sleep' ? 70 : 68;
+        var eye = function (x) { return '<rect x="' + (x - 3.6) + '" y="' + (ey - 6) + '" width="7.2" height="12" rx="3.6" fill="' + W + '"/>'; };
+        var body = '<path d="' + (s === 'sleep' ? puddle : drop) + '" fill="' + PEN + '">' +
+          (s === 'sleep' ? A('d', puddle + ';' + 'M80 46C80 46 112 61 112 72A32 17 0 0 1 48 72C48 61 80 46 80 46Z' + ';' + puddle, '5s', EASE + ' keyTimes="0;.5;1"') : A('d', drop + ';' + squash + ';' + drop, s === 'think' ? '1.4s' : '3.6s', EASE + ' keyTimes="0;.5;1"')) + '</path>' +
+          '<path d="M66 40Q70 32 76 28" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="3" stroke-linecap="round"/>';
+        var eyes = '<g transform="translate(' + dx + ' ' + dy + ')">' + look(3, '<g class="sq" style="transform:scaleY(' + sy + ')"><g class="' + (s === 'sleep' ? '' : 'blink') + '">' + eye(71) + eye(89) + '</g></g>') + '</g>';
+        var out = '<g' + (s === 'drift' ? ' transform="rotate(9 80 94)"' : '') + '>' + body + eyes + '</g>';
+        if (s === 'think') out += '<circle cx="80" cy="98" r="3.5" fill="' + HL + '">' + A('cy', '94;104;104', '1.4s', ' keyTimes="0;.7;1"') + A('opacity', '0;1;0', '1.4s') + '</circle>';
+        return out;
+      } },
+    { name: 'Minerva’s eyes', box: '44 24 72 54',
+      life: 'Only the eyes and ear tufts of the owl of wisdom. It blinks slowly and its pupils follow your pointer.',
+      states: 'In focus the lids come halfway down; answering, the pupils go up and one tuft rises; drifting, the pupils widen; on a break the eyes close and the tufts droop.',
+      fit: 'The most academic, and tidy because it is only lines. Study apps already have a famous owl it could be confused with.',
+      draw: function (s) {
+        var tuftUp = s === 'drift' ? -6 : s === 'sleep' ? 5 : 0, pr = s === 'drift' ? 7.5 : 5;
+        var out = '<g fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round">' +
+          '<path d="M50 ' + (32 + tuftUp) + 'L58 41M110 ' + (32 + tuftUp) + 'L102 41"' + (s === 'think' ? '' : '') + '/></g>';
+        if (s === 'think') out = '<g fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"><path d="M50 32L58 41"/><path d="M110 26L102 41"/></g>';
+        out += '<path d="M76 62L80 70L84 62Z" fill="currentColor"/>';
+        [64, 96].forEach(function (cx) {
+          if (s === 'sleep') { out += '<path d="M' + (cx - 12) + ' 52Q' + cx + ' 59 ' + (cx + 12) + ' 52" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>'; return; }
+          var px = s === 'think' ? 3 : 0, py = s === 'think' ? -4 : s === 'focus' ? 3 : 0;
+          out += '<g class="blink"><circle cx="' + cx + '" cy="52" r="14" fill="var(--bg)" stroke="currentColor" stroke-width="3.5"/>' +
+            look(4, '<circle cx="' + (cx + px) + '" cy="' + (52 + py) + '" r="' + pr + '" fill="currentColor"/>') +
+            (s === 'focus' ? '<path d="M' + (cx - 14) + ' 50A14 14 0 0 1 ' + (cx + 14) + ' 50Z" fill="currentColor"/>' : '') + '</g>';
+        });
+        return out;
+      } },
+    { name: 'Peeking book', box: '26 22 112 60',
+      life: 'The cover of a book lying flat lifts and settles like breathing, and eyes peek out of the gap.',
+      states: 'In focus it reads with the cover slightly open; answering, it flutters; drifting, the cover swings wide and it looks aside; on a break it stays shut and only the cover rises and falls.',
+      fit: 'Fits the textbook story and makes a fun scene, but at notch size it is just a book.',
+      draw: function (s) {
+        // The cover turns on its spine at (34,56). The dark gap under it, and the eyes, are clipped to the same angle.
+        var degs = { rest: [0, -16, -16, 0], focus: [-8, -10, -8], think: [-4, -20, -4], drift: [-28, -30, -28], sleep: [0, -3, 0] }[s];
+        var dur = { rest: '4s', focus: '4s', think: '.9s', drift: '3s', sleep: '5s' }[s];
+        var kt = s === 'rest' ? ' keyTimes="0;.3;.7;1"' : ' keyTimes="0;.5;1"', ease = s === 'rest' ? EASE3 : EASE;
+        var tip = function (d) { var r = d * Math.PI / 180; return (34 + 98 * Math.cos(r)).toFixed(1) + ',' + (57 + 98 * Math.sin(r)).toFixed(1); };
+        var pts = degs.map(function (d) { return '34,58 132,58 ' + tip(d); }).join(';');
+        var id = 'gap' + (++uid);
+        var sy = s === 'drift' ? 1.2 : s === 'focus' ? .6 : 1, dx = s === 'drift' ? -5 : 0, dy = s === 'focus' ? 3 : 0;
+        var eye = function (x) { return '<rect x="' + (x - 3.4) + '" y="45" width="6.8" height="10" rx="3.4" fill="' + W + '"/>'; };
+        var eyes = s === 'sleep' ? '' : '<g clip-path="url(#' + id + ')"><g transform="translate(' + dx + ' ' + dy + ')">' + look(3, '<g class="sq" style="transform:scaleY(' + sy + ')"><g class="blink">' + eye(100) + eye(112) + '</g></g>') + '</g></g>';
+        return '<defs><clipPath id="' + id + '"><polygon points="' + pts.split(';')[0] + '">' + A('points', pts, dur, ease + kt) + '</polygon></clipPath></defs>' +
+          '<rect x="30" y="70" width="104" height="6" rx="2" fill="currentColor"/>' +
+          '<rect x="34" y="58" width="96" height="12" fill="#fff"/><g fill="' + RULE + '"><rect x="34" y="61" width="96" height="1"/><rect x="34" y="64" width="96" height="1"/><rect x="34" y="67" width="96" height="1"/></g>' +
+          '<polygon points="' + pts.split(';')[0] + '" fill="' + INK + '">' + A('points', pts, dur, ease + kt) + '</polygon>' + eyes +
+          '<g><rect x="30" y="52" width="104" height="6" rx="2" fill="currentColor"/>' + R(degs.map(function (d) { return d + ' 34 56'; }).join(';'), dur, ease + kt) + '</g>' +
+          '<rect x="96" y="76" width="5" height="12" fill="' + HL + '"/>';
+      } },
+    { name: 'Firefly', box: '44 16 92 66',
+      life: 'A small light drifting over the desk. It flies about, then lands on a line of text and glows.',
+      states: 'In focus it sits on a line and glows steadily; answering, it circles in violet; drifting, it blinks amber and flies off; on a break it sits and dims.',
+      fit: 'Poetic motion and almost no body, so it stays tidy. Standing still, it is just a yellow dot.',
+      draw: function (s, tiny) {
+        var col = s === 'think' ? C.think : s === 'drift' ? C.drift : HL;
+        var path = { rest: 'M80 50C100 30 122 48 104 62C86 76 58 30 80 50', think: 'M80 46a10 10 0 1 0 0.1 0', drift: 'M80 50C100 40 120 30 132 24C120 34 100 46 80 50' }[s];
+        var dur = { rest: '7s', think: '1.6s', drift: '3s' }[s];
+        var pulse = A('opacity', (s === 'sleep' ? '.15;.4;.15' : s === 'drift' ? '1;.25;1' : '.55;1;.55'), s === 'drift' ? '.8s' : s === 'sleep' ? '6s' : '3s');
+        var fly = '<g>' + pulse + '<circle r="11" fill="' + col + '" opacity=".28"/><circle r="5.5" fill="' + col + '" opacity=".6"/><circle r="3" fill="' + col + '"/></g><ellipse cx="-4" cy="0" rx="3" ry="2" fill="currentColor" opacity=".7"/>';
+        var out = tiny ? '' : lines(52);
+        if (path) out += '<g><animateMotion path="' + path + '" dur="' + dur + '" repeatCount="indefinite"' + (s === 'rest' ? ' rotate="0"' : '') + '/>' + fly + '</g>';
+        else out += '<g transform="translate(110 50)">' + fly + '</g>';
+        return out;
+      } },
+    { name: 'Paper crane', box: '32 14 100 66',
+      life: 'A crane folded from one sheet of notebook paper. It beats its wings slowly and bobs up and down; its angular faces keep it tidy.',
+      states: 'In focus it folds its wings and bows; answering, it tilts its head and flaps fast; drifting, it raises its head and looks elsewhere; on a break it rests with wings folded, only breathing.',
+      fit: 'Continues our paper material and is the most grown-up. Cranes are a common symbol, so its shape has to make the difference.',
+      draw: function (s) {
+        var flapDur = { rest: '2.8s', think: '.7s', drift: '2.2s' }[s];
+        var still = s === 'focus' || s === 'sleep';
+        var stroke = ' stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"';
+        var head = { focus: '14', think: '-10', drift: '-22' }[s] || '0';
+        var back = '<polygon points="86,56 62,' + (still ? 44 : 22) + ' 94,58" fill="' + RULE + '"' + stroke + '>' + (still ? '' : R('0 88 57;10 88 57;0 88 57', flapDur, EASE + ' keyTimes="0;.5;1"')) + '</polygon>';
+        var front = '<polygon points="84,58 108,' + (still ? 46 : 26) + ' 98,62" fill="var(--bg)"' + stroke + '>' + (still ? '' : R('0 88 59;-12 88 59;0 88 59', flapDur, EASE + ' keyTimes="0;.5;1"')) + '</polygon>';
+        var body = '<polygon points="66,64 86,54 104,64 84,72" fill="var(--bg)"' + stroke + '/>' +
+          '<polygon points="102,64 126,42 106,66" fill="var(--bg)"' + stroke + '/>' +
+          '<g transform="rotate(' + head + ' 68 63)"><polygon points="68,64 48,42 52,41 72,61" fill="var(--bg)"' + stroke + '/><polygon points="48,42 40,47 51,44" fill="currentColor"/></g>';
+        var bob = '<animateTransform attributeName="transform" type="translate" values="0 0;0 ' + (s === 'sleep' ? '1.5' : '-4') + ';0 0" dur="' + (s === 'sleep' ? '5s' : s === 'think' ? '1.4s' : '3.2s') + '" repeatCount="indefinite"' + EASE + ' keyTimes="0;.5;1"/>';
+        return '<g>' + bob + back + body + front + '</g><rect x="58" y="86" width="44" height="4" rx="2" fill="' + HL + '"/>';
+      } }
+  ];
+
+  var uid = 0;
+  var grid = document.getElementById('grid'), state = 'rest', cards = [];
+  KINDS.forEach(function (k, i) {
+    var fig = document.createElement('figure');
+    fig.className = 'card';
+    fig.innerHTML = '<div class="plate"><div class="notch" aria-hidden="true"><svg class="tiny" viewBox="' + k.box + '"></svg><span>33m</span></div>' +
+      '<svg class="big" viewBox="0 0 160 100" role="img" aria-label="' + k.name + '"></svg></div>' +
+      '<figcaption><h3><b>' + (i + 1) + '</b>' + k.name + '</h3><dl><dt>How it lives</dt><dd>' + k.life + '</dd><dt>States</dt><dd>' + k.states + '</dd><dt>Fit</dt><dd>' + k.fit + '</dd></dl></figcaption>';
+    grid.appendChild(fig);
+    cards.push({ kind: k, big: fig.querySelector('.big'), tiny: fig.querySelector('.tiny') });
+  });
+  function render() {
+    cards.forEach(function (c) {
+      c.big.innerHTML = c.kind.draw(state, false);
+      c.tiny.innerHTML = c.kind.draw(state, true);
+    });
+    looks = Array.prototype.slice.call(document.querySelectorAll('.look'));
+    aim();
+  }
+  var buttons = Array.prototype.slice.call(document.querySelectorAll('.state'));
+  buttons.forEach(function (b) {
+    b.addEventListener('click', function () {
+      state = b.getAttribute('data-state');
+      buttons.forEach(function (o) { o.setAttribute('aria-pressed', o === b ? 'true' : 'false'); });
+      render();
+    });
+  });
+
+  // Eyes follow the pointer: each `look` group moves toward it, up to data-amp drawing units. When the pointer
+  // stops for a few seconds, every creature (the small ones in the notch too) glances around on its own.
+  var looks = [], pointer = null, raf = 0, lastMove = 0;
+  var still = window.matchMedia('(prefers-reduced-motion: reduce)');
+  function aim() {
+    raf = 0;
+    var idle = !pointer || performance.now() - lastMove > 2600, t = performance.now() / 1000;
+    looks.forEach(function (g, i) {
+      var amp = +g.getAttribute('data-amp'), svg = g.ownerSVGElement, r = svg.getBoundingClientRect(), nx, ny;
+      if (still.matches || state === 'sleep') { g.setAttribute('transform', ''); return; }
+      if (idle || svg.classList.contains('tiny')) {
+        var w = t + i * 2.3;
+        nx = .75 * Math.sin(w * .41) + .25 * Math.sin(w * 1.6); ny = .4 * Math.sin(w * .57 + 1);
+      } else {
+        nx = Math.max(-1, Math.min(1, (pointer.x - (r.left + r.width / 2)) / 260));
+        ny = Math.max(-1, Math.min(1, (pointer.y - (r.top + r.height / 2)) / 260));
+      }
+      g.setAttribute('transform', 'translate(' + (nx * amp).toFixed(2) + ' ' + (ny * amp * .8).toFixed(2) + ')');
+    });
+  }
+  window.addEventListener('pointermove', function (e) { pointer = { x: e.clientX, y: e.clientY }; lastMove = performance.now(); if (!raf) raf = requestAnimationFrame(aim); }, { passive: true });
+  setInterval(function () { if (!document.hidden && (!pointer || performance.now() - lastMove > 2600)) aim(); }, 60);
+  render();
+})();
+</script>
+<script>
+/* When this sheet sits inside the gallery (opened as file#embed): hide its own header and state bar, tell the gallery
+   its height, and take state changes from the gallery's one state bar. */
+(function () {
+  if (location.hash !== '#embed') return;
+  document.documentElement.classList.add('embed');
+  function send() { parent.postMessage({ sheetHeight: document.documentElement.scrollHeight }, '*'); }
+  window.addEventListener('load', send);
+  window.addEventListener('resize', send);
+  if ('ResizeObserver' in window) new ResizeObserver(send).observe(document.body);
+  window.addEventListener('message', function (e) {
+    var s = e.data && e.data.state;
+    if (!s) return;
+    var names = s === 'think' ? ['think', 'thinking'] : [s], button = null;
+    names.some(function (n) { button = document.querySelector('.state[data-state="' + n + '"], .mood[data-mood="' + n + '"]'); return !!button; });
+    if (button) button.click();
+  });
+})();
+</script>
+</body>
+</html>

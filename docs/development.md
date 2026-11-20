@@ -1,0 +1,84 @@
+# Development
+
+A Swift package with no outside libraries, and a static site with no build step. `CLAUDE.md` holds the project’s rules; read it before changing anything.
+
+## Build and run
+
+```bash
+./scripts/build.sh && open build/StudyNotch.app
+```
+
+The build is signed with a Developer ID or Apple Development certificate when the Mac has one, so the Accessibility and Screen Recording permissions survive a rebuild. Without one it is signed ad hoc, and they have to be granted again after every rebuild. Set `STUDYNOTCH_SIGN_IDENTITY` to pick a certificate.
+
+## Checks
+
+| Command | What it checks | Uses your AI account |
+|---|---|---|
+| `swift build && .build/debug/StudyNotch --selftest` | Pure logic: drift rules, finding pages in PDFs, settings, parsing each AI’s output, sign-in states, course folders, the mascot’s look | No |
+| `.build/debug/StudyNotch --uitest-courses` | Clicks through the Add tab in the real window: picking, Add, closing without Add, Edit, linking, renaming, removing | No |
+| `.build/debug/StudyNotch --uitest-eyes` | How far the mascot’s eyes move with the pointer, measured in the real window | No |
+| `.build/debug/StudyNotch --uitest` | The AI card and the Add tab in the real window, including one real question each to Claude and ChatGPT | Yes |
+| `.build/debug/StudyNotch --asktest [image]` | One real question, as the app sends it. `STUDYNOTCH_AI=codex-cli` picks ChatGPT | Yes |
+| `.build/debug/StudyNotch --asktest-course` | A real question the AI can only answer by opening the course’s files itself | Yes |
+| `.build/debug/StudyNotch --render <folder>` | A picture of every island and question-window state, to look at | No |
+| `.build/debug/StudyNotch --render-site site/assets/img/app` | The same pictures on a transparent background, for the site and this README | No |
+
+The `--uitest` modes run the real app in a throw-away home folder, so your settings, courses and sign-ins are not touched and nothing goes to your Trash.
+
+After changing the site, check that it opens with no server (`open site/index.html`), that nothing scrolls sideways at 390px, and that it is complete with Reduce motion on. To preview it with a server:
+
+```bash
+python3 -m http.server 4173 --directory site
+```
+
+## Layout
+
+| Path | What it is |
+|---|---|
+| `Sources/StudyNotch/AppModel.swift` | State and every action: sessions, drift cards, the question flow, courses, AI connection |
+| `Sources/StudyNotch/IslandPanel.swift` | The window over the notch: the notch’s size, which screen, which clicks reach the island, the pointer for the mascot’s eyes |
+| `Sources/StudyNotch/IslandScreens.swift` | The island’s screens: peek, tabs, cards, course pills, record, add and edit, drift card, summary, setup |
+| `Sources/StudyNotch/IslandViews.swift` | The island’s shape, motion values, colour tokens and shared buttons |
+| `Sources/StudyNotch/Mascot.swift`, `MascotRenderer.swift` | Squat: its moods, blinks, pointer following, and the Metal shader that draws it |
+| `Sources/StudyNotch/PopupPanel.swift`, `AnswerWebView.swift` | The question window, and answers drawn as Markdown with math |
+| `Sources/StudyNotch/RightClickWatcher.swift`, `SelectionWatcher.swift` | The button above the right-click menu, and reading the selected text |
+| `Sources/StudyNotch/ScreenshotWatcher.swift`, `FocusWatcher.swift` | New screenshots and captures; the front app, window and tab, and the drift rules |
+| `Sources/StudyNotch/Materials.swift` | Course folders, linked folders, reading PDFs, finding the page of a sentence, the text copies an AI may open |
+| `Sources/StudyNotch/AIEngine.swift`, `Prompts.swift` | Claude, ChatGPT (Codex), Gemini (`agy`) and the API key; sign-in checks; what is sent and the rules given to the AI |
+| `Sources/StudyNotch/Config.swift`, `SessionLog.swift` | The settings file and session history |
+| `Sources/StudyNotch/DevTools.swift`, `UITest.swift` | Self-tests, real-question tests, renders, and the click-through tests |
+| `site/` | The landing page and docs. `assets/squat.js` draws the mascot with the same shader in WebGL |
+| `design/` | Mascot drafts and rounds. Not part of the site |
+| `docs/assets/` | Pictures for this README |
+
+## Where your data lives
+
+```
+~/StudyNotch/
+├── config.json          courses, linked folders, the connected AI, drift rules
+├── sessions.jsonl       finished sessions
+├── Captures/            captures attached to questions (deleted after a week)
+├── .accounts/           sign-ins kept only for StudyNotch (“Another account”)
+├── .cache/text/         the read text of PDFs in linked folders
+└── Courses/<course>/
+    ├── course.md        course notes, sent in front of every question
+    ├── materials/       PDFs copied into the course
+    ├── text/            every PDF of the course as text, page by page: what the AI may open
+    ├── cards.md         review cards
+    └── log/             questions and answers by date
+```
+
+API keys live only in the Keychain.
+
+## config.json
+
+- `presets`: the courses. Each has `course`, `allow` (places allowed only in that course) and `folders` (linked folders). Edit them on the Add tab rather than here.
+- `ai.provider`: the connected AI (`claude-cli`, `codex-cli`, `gemini-cli`, `api-key`), or empty for none. `ai.account` is `mac` or `own` (another account). `ai.model` is empty for each AI’s default.
+- `sessionMinutes`, `breakMinutes`: session and break length.
+- `allowAlways`, `distractions`: an entry with a dot is a site; one without is an app name.
+- `nudgeAfterSeconds`: time on a distracting place before a drift card. Default 60.
+- `offerOutsideSession`: whether a screenshot opens the question window outside a session too. Off by default.
+- `sounds`: small macOS system sounds. On by default.
+- `display`: `notch` (default), `main` (the menu bar screen) or `mouse` (the screen with the pointer).
+
+After editing by hand, choose Reload settings in the menu bar icon.
