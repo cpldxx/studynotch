@@ -297,7 +297,9 @@
     var aa = busy ? 1 : 2;
     var key = size + '|' + aa + '|' + (this.turn.x + this.spin.x * Math.PI / 180).toFixed(3) + '|' + JSON.stringify(l);
     if (key !== this.painted) {
-      if (this.canvas.width !== size) this.canvas.width = this.canvas.height = size;
+      // Both sides: a new canvas is 300 by 150, so checking only the width left a 150px mascot on a
+      // 2x screen (300 pixels) with half a canvas, cut through its eyes.
+      if (this.canvas.width !== size || this.canvas.height !== size) this.canvas.width = this.canvas.height = size;
       Squat.paint(this.canvas, l, { aa: aa, turn: this.turn.x + this.spin.x * Math.PI / 180 });
       this.painted = key;
     }

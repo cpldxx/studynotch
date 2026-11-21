@@ -184,7 +184,9 @@
 
   function paint(canvas, l, opts) {
     opts = opts || {};
-    var size = canvas.width, ctx = canvas.getContext('2d');
+    var size = canvas.width;
+    if (canvas.height !== size) canvas.height = size;   // it is drawn in a square
+    var ctx = canvas.getContext('2d');
     if (!gl) { flatStandIn(ctx, l, size); return; }
     gl.canvas.width = gl.canvas.height = size;
     gl.viewport(0, 0, size, size);
