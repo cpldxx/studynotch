@@ -42,7 +42,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         model.start()
         island = IslandController(model: model)
         popup = AskPopupController(model: model)
-        if UITest.active { UITest.run(model: model) }
+        if UITest.active { UITest.run(model: model) } else { ClaudeApp.watch() }
 
         // Right click on highlighted text, in any app, session or not: our button sits on top of the menu.
         rightClick.shouldOffer = { [model] in model.selection.hasSelection() }
@@ -85,6 +85,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         // Which AI answers is changed only in the setup card, where connecting asks first.
         let ai = model.connectedAI.map { "AI connection: \($0.label)…" } ?? "Connect an AI…"
         menu.addItem(ActionItem(ai) { [model] in model.openSetup(step: .ai) })
+        if model.connectedAI == .claudeCLI, model.connectedAccount == .mac {
+            menu.addItem(ActionItem("Keep questions in the Claude app", checked: model.config.ai.keepInClaude) { [model] in
+                model.toggleKeepInClaude()
+            })
+        }
 
         let where_ = NSMenuItem(title: "Notch island position", action: nil, keyEquivalent: "")
         let whereMenu = NSMenu()

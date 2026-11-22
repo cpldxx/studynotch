@@ -171,6 +171,17 @@ struct AskPopupView: View {
                     Spacer(minLength: 0)
                     Chip("Save as review card", icon: "square.and.arrow.down") { model.saveCard() }
                 }
+                if thread.inClaude {
+                    HStack(spacing: 8) {
+                        Text("Also in the Claude app, under \(thread.claudeCourse).")
+                            .font(.system(size: 12))
+                            .foregroundColor(Ink.muted)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                        Spacer(minLength: 0)
+                        Chip("Open in Claude", icon: "arrow.up.right") { model.openInClaude() }
+                    }
+                }
                 Divider().overlay(Ink.line)
             }
         }

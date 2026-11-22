@@ -51,7 +51,7 @@ Then select some text anywhere, right-click, and press **Ask StudyNotch** above 
 
 | AI | What you need | How it answers | Tried for real |
 |---|---|---|---|
-| **Claude** | The Claude app, signed in | The Claude Code inside the app, in the background. No Claude window opens. | Yes |
+| **Claude** | The Claude app, signed in | The Claude Code inside the app, in the background; each question is then kept in the Claude app under the course’s name | Yes |
 | **ChatGPT** | The ChatGPT app, signed in | The Codex inside the app, read-only | Yes |
 | **Gemini** | Homebrew; the tile installs Google’s Antigravity CLI (`agy`) | `agy`, signed in with Google | Not yet |
 | **API key** | An Anthropic API key | Directly; the key stays in the Keychain | |
@@ -59,7 +59,9 @@ Then select some text anywhere, right-click, and press **Ask StudyNotch** above 
 - Only the AI you connect gets your questions. Being signed in to an app on the Mac doesn’t connect it, and StudyNotch never switches to another AI on its own.
 - **Another account** opens the service’s own sign-in page. That sign-in is kept only for StudyNotch, so the Claude and ChatGPT apps stay signed in as they were.
 - **Test connection** sends one real question and shows the answer and how long it took.
-- Questions go through each service’s own tool, so they count toward your plan but don’t show up in the claude.ai or ChatGPT chat lists. Chat Projects there can’t be filled by another app; a course is the AI’s project instead (below).
+- Questions go through each service’s own tool, so they count toward your plan.
+- **With Claude, every question is kept in the Claude app**: as a Claude Code session under the course’s name, named after your question, with the answer. Follow-ups continue it, and **Open in Claude** opens it there. This uses the account the Claude app is signed in with; untick “Keep questions in the Claude app” in the menu bar icon to stop it.
+- ChatGPT and Gemini questions aren’t kept in those apps. Chat Projects in Claude and ChatGPT can’t be read or filled by another app; a course is the AI’s project instead (below).
 
 ## Courses and their files
 
@@ -89,7 +91,7 @@ Answers come back in the language you type: ask in Korean and the answer is in K
 | Any page of the course’s PDFs the AI opens to answer | Your password: every sign-in happens in the service’s own page |
 | The app and window title you were reading in, and your question | |
 
-There is no StudyNotch server and no account.
+With Claude, each question and its answer are also kept in Claude’s own session history on your Mac (`~/.claude/projects`), which is how the Claude app shows them. There is no StudyNotch server and no account.
 
 ## Docs
 

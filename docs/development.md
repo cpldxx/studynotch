@@ -19,6 +19,7 @@ The build is signed with a Developer ID or Apple Development certificate when th
 | `.build/debug/StudyNotch --uitest-eyes` | How far the mascot’s eyes move with the pointer, measured in the real window | No |
 | `.build/debug/StudyNotch --uitest` | The AI card and the Add tab in the real window, including one real question each to Claude and ChatGPT | Yes |
 | `.build/debug/StudyNotch --asktest [image]` | One real question, as the app sends it. `STUDYNOTCH_AI=codex-cli` picks ChatGPT | Yes |
+| `.build/debug/StudyNotch --asktest-claude-app` | The real question flow with Claude: a question and a follow-up kept as one named session in the course’s folder, and the Claude app taking it (its log). Leaves one “STUDYNOTCH TEST” session in the Claude app | Yes |
 | `.build/debug/StudyNotch --asktest-course` | A real question the AI can only answer by opening the course’s files itself | Yes |
 | `.build/debug/StudyNotch --render <folder>` | A picture of every island and question-window state, to look at | No |
 | `.build/debug/StudyNotch --render-site site/assets/img/app` | The same pictures on a transparent background, for the site and this README | No |
@@ -54,6 +55,7 @@ Signing in to Cloudflare (`npx wrangler@4 login`) is done by the owner of the ac
 | `Sources/StudyNotch/RightClickWatcher.swift`, `SelectionWatcher.swift` | The button above the right-click menu, and reading the selected text |
 | `Sources/StudyNotch/ScreenshotWatcher.swift`, `FocusWatcher.swift` | New screenshots and captures; the front app, window and tab, and the drift rules |
 | `Sources/StudyNotch/Materials.swift` | Course folders, linked folders, reading PDFs, finding the page of a sentence, the text copies an AI may open |
+| `Sources/StudyNotch/ClaudeApp.swift` | Handing questions kept as Claude Code sessions to the Claude app with its own `claude://resume` link |
 | `Sources/StudyNotch/AIEngine.swift`, `Prompts.swift` | Claude, ChatGPT (Codex), Gemini (`agy`) and the API key; sign-in checks; what is sent and the rules given to the AI |
 | `Sources/StudyNotch/Config.swift`, `SessionLog.swift` | The settings file and session history |
 | `Sources/StudyNotch/DevTools.swift`, `UITest.swift` | Self-tests, real-question tests, renders, and the click-through tests |
@@ -78,12 +80,12 @@ Signing in to Cloudflare (`npx wrangler@4 login`) is done by the owner of the ac
     └── log/             questions and answers by date
 ```
 
-API keys live only in the Keychain.
+Questions asked with Claude are also kept by Claude Code itself, in `~/.claude/projects/<the course folder>/<session>.jsonl`, which is what the Claude app shows. API keys live only in the Keychain.
 
 ## config.json
 
 - `presets`: the courses. Each has `course`, `allow` (places allowed only in that course) and `folders` (linked folders). Edit them on the Add tab rather than here.
-- `ai.provider`: the connected AI (`claude-cli`, `codex-cli`, `gemini-cli`, `api-key`), or empty for none. `ai.account` is `mac` or `own` (another account). `ai.model` is empty for each AI’s default.
+- `ai.provider`: the connected AI (`claude-cli`, `codex-cli`, `gemini-cli`, `api-key`), or empty for none. `ai.account` is `mac` or `own` (another account). `ai.model` is empty for each AI’s default. `ai.keepInClaude` (on by default) keeps each Claude question as a Claude Code session in the course’s folder and hands it to the Claude app; it only applies to Claude with the Mac’s account.
 - `sessionMinutes`, `breakMinutes`: session and break length.
 - `allowAlways`, `distractions`: an entry with a dot is a site; one without is an app name.
 - `nudgeAfterSeconds`: time on a distracting place before a drift card. Default 60.

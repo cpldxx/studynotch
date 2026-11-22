@@ -79,13 +79,16 @@
     <p>Press “Test connection”. StudyNotch sends one real question to the connected AI, the same way your study questions go, and shows the answer and how long it took. If the AI can’t answer, the line says why.</p>
     <figure class="shot"><img src="../assets/img/app/08f-setup-tested.png" width="640" height="236" alt="After Test connection, the line under the title reads: Real answer from Claude in 2.3 s: “Connected to StudyNotch”."></figure>
 
-    <h2 id="where">Where your questions go, and where they don’t show up</h2>
+    <h2 id="where">Where your questions go, and where they show up</h2>
     <ul>
       <li>They go to the account on the tile, and count toward that plan’s usage, the same as using Claude or ChatGPT yourself.</li>
-      <li>They travel through the service’s own tool (Claude Code for Claude, Codex for ChatGPT, Antigravity for Gemini), not through the chat window. So they do <strong>not</strong> appear in the chat list on claude.ai, chatgpt.com or in the desktop apps.</li>
-      <li>The Projects you make in those chat windows can’t be filled from outside: neither Claude nor ChatGPT offers a way to add files to a chat Project except by hand. What these tools do have is a project that is a folder, and that is what a course becomes (below).</li>
-      <li>StudyNotch asks the tool not to save the conversation. The only copy is in your own course folder’s log.</li>
+      <li>They travel through the service’s own tool (Claude Code for Claude, Codex for ChatGPT, Antigravity for Gemini), not through a chat window.</li>
+      <li><strong>With Claude, every question is kept in the Claude app.</strong> After the first answer, StudyNotch hands the conversation to the Claude app with the app’s own link, so it appears there as a Claude Code session, under the course’s name and named after your question. Follow-ups in the same question window continue that session, and “Open in Claude” opens it in the Claude app so you can keep going there. Claude is not brought to the front unless you press that button.</li>
+      <li>This works with the account the Claude app is signed in with (the tile’s “this Mac” account). A sign-in kept only for StudyNotch isn’t the app’s, so its questions aren’t kept. To stop keeping them, untick “Keep questions in the Claude app” in the menu bar icon.</li>
+      <li>Questions to ChatGPT and Gemini are not kept: StudyNotch asks those tools not to save the conversation, so they don’t appear in the ChatGPT app or on gemini.google.com. Every answer is also in your own course folder’s log.</li>
+      <li>The Projects in the chat side of Claude and ChatGPT (with their own chats and uploaded files) can’t be read or filled from outside: neither offers another app a way in. What the tools do have is a project that is a folder, and that is what a course becomes (below).</li>
     </ul>
+    <figure class="shot"><img src="../assets/img/app/12b-popup-in-claude.png" width="490" height="562" alt="The question window after an answer from Claude, with the line Also in the Claude app, under MATH 237, and a button Open in Claude." loading="lazy"></figure>
 
     <h2 id="project">A course is the AI’s project</h2>
     <p>The folders and PDFs you give a course are not only searched by StudyNotch. They are handed to the connected AI as its project, so it can open them itself when the page that came with your question isn’t enough: a definition from three lectures ago, a due date in the syllabus, the next step of a proof.</p>

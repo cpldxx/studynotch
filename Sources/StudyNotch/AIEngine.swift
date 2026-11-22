@@ -133,6 +133,32 @@ struct AIRequest {
     /// The course's project: folders the AI may open by itself, read-only. It works in the first.
     /// Empty for a question with no course files.
     var folders: [String] = []
+    /// Claude only: the conversation is kept as a Claude Code session with this id, so the Claude
+    /// app can show it. nil keeps nothing (`--no-session-persistence`).
+    var session: ClaudeSession?
+}
+
+/// A question kept in Claude's own session history, in the course's folder, so the Claude app
+/// lists it under the course's name (the user's request, 2026-11-22).
+struct ClaudeSession: Equatable {
+    var id: String
+    /// The course's folder. Claude works in it, so the Claude app files the session under its name.
+    var folder: String
+    /// The session's name in the Claude app. Ignored when continuing.
+    var name: String
+    /// A follow-up: continue the session instead of starting it.
+    var resume: Bool
+
+    /// What the Claude app lists it as: the question, then the picked text, on one line.
+    static func name(question: String, quote: String?) -> String {
+        var name = question.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let quote = quote?.trimmingCharacters(in: .whitespacesAndNewlines), !quote.isEmpty {
+            name = name.isEmpty ? quote : name + ": " + quote
+        }
+        name = name.components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty }.joined(separator: " ")
+        if name.isEmpty { name = "Question" }
+        return name.count > 70 ? String(name.prefix(69)).trimmingCharacters(in: .whitespaces) + "…" : name
+    }
 }
 
 enum AIEvent: Equatable {
@@ -554,7 +580,11 @@ final class AIEngine {
         cancel()
         let id = runID
         runEnvironment = Self.environment(kind, account)
-        runFolder = kind == .apiKey ? nil : request.folders.first
+        switch kind {
+        case .apiKey: runFolder = nil
+        case .claudeCLI: runFolder = request.session?.folder ?? request.folders.first
+        default: runFolder = request.folders.first
+        }
         let emit: (AIEvent) -> Void = { [weak self] event in
             DispatchQueue.main.async {
                 guard let self, self.runID == id else { return }
@@ -577,15 +607,26 @@ final class AIEngine {
         args += ["--system-prompt", r.system]
         // Reading only: no shell, no edits, no web. Claude Code lets it read the folder it runs in
         // and the ones added here, and refuses anything else when nobody is there to approve it.
-        var readable = Array(r.folders.dropFirst())
+        // It runs in the course's folder when the question is kept, else in the first project folder.
+        let home = r.session?.folder ?? r.folders.first
+        var readable = r.folders.filter { home == nil || !Self.isInside($0, home!) }
         if let image = r.imagePath { readable.append((image as NSString).deletingLastPathComponent) }
-        if r.folders.isEmpty && readable.isEmpty {
+        if r.folders.isEmpty && r.imagePath == nil {
             args += ["--tools", ""]
         } else {
             args += ["--tools", r.folders.isEmpty ? "Read" : "Read,Glob,Grep"]
             for folder in readable { args += ["--add-dir", folder] }
         }
-        return args + ["--setting-sources", "", "--strict-mcp-config", "--no-session-persistence", "--disable-slash-commands"]
+        args += ["--setting-sources", "", "--strict-mcp-config", "--disable-slash-commands"]
+        guard let session = r.session else { return args + ["--no-session-persistence"] }
+        if session.resume { return args + ["--resume", session.id] }
+        return args + ["--session-id", session.id, "--name", session.name]
+    }
+
+    /// Whether `path` is `folder` or somewhere inside it.
+    static func isInside(_ path: String, _ folder: String) -> Bool {
+        let a = (path as NSString).standardizingPath, b = (folder as NSString).standardizingPath
+        return a == b || a.hasPrefix(b.hasSuffix("/") ? b : b + "/")
     }
 
     static func claudeInput(_ r: AIRequest) -> String {

@@ -97,13 +97,17 @@ struct AISettings: Codable, Equatable {
     /// Whose sign-in the connected AI uses: "mac" (the one this Mac already has, shared with the
     /// Claude or ChatGPT app) or "own" (one kept only for StudyNotch).
     var account: String
+    /// Claude with the Mac's sign-in: keep each question as a Claude Code session in the course's
+    /// folder and hand it to the Claude app, so it shows up there (the user's request, 2026-11-22).
+    var keepInClaude: Bool
     // No language setting: answers follow what the student types (`Prompts.answerLanguage`).
     // An old config's `language` key is simply ignored.
 
-    init(provider: String = "", model: String = "", account: String = "mac") {
+    init(provider: String = "", model: String = "", account: String = "mac", keepInClaude: Bool = true) {
         self.provider = provider
         self.model = model
         self.account = account
+        self.keepInClaude = keepInClaude
     }
 
     init(from decoder: Decoder) throws {
@@ -111,6 +115,7 @@ struct AISettings: Codable, Equatable {
         provider = c.value(.provider, "")
         model = c.value(.model, "")
         account = c.value(.account, "mac")
+        keepInClaude = c.value(.keepInClaude, true)
     }
 }
 

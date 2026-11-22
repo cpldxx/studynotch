@@ -92,6 +92,12 @@ struct AskThread {
     var error: String?
     var errorAction: ErrorAction?
     var busy = false
+    /// The Claude Code session this window's questions are kept in, when they are kept in the
+    /// Claude app (`ClaudeSession`), and the course it is filed under there.
+    var claudeSession: String?
+    var claudeCourse = ""
+    /// The first answer arrived: the session is in the Claude app, and follow-ups continue it.
+    var inClaude = false
 
     /// True once a question has been sent in this popup.
     var started: Bool { !question.isEmpty }
@@ -640,6 +646,11 @@ final class AppModel: ObservableObject {
         mascotLine = MascotLines.pick(session: session, drift: glyph == .drift, todayMinutes: today.minutes,
                                       index: mascotPat)
         mascotLineUntil = Date().addingTimeInterval(2.2)
+    }
+
+    func toggleKeepInClaude() {
+        config.ai.keepInClaude.toggle()
+        ConfigStore.save(config)
     }
 
     func toggleSounds() {
@@ -1214,14 +1225,28 @@ final class AppModel: ObservableObject {
             thread = t
             return
         }
+        let course = session?.preset.course ?? ""
+        let settings = config.ai
+        let account = connectedAccount
+        // Claude with the Mac's sign-in: the question is kept as a Claude Code session in the
+        // course's folder, and the Claude app gets it after the first answer. A follow-up
+        // continues the same session, so the earlier questions aren't sent again.
+        var claude: ClaudeSession?
+        if kind == .claudeCLI, account == .mac, settings.keepInClaude, !previewMode {
+            let resume = t.inClaude && t.claudeSession != nil
+            let id = resume ? t.claudeSession! : UUID().uuidString.lowercased()
+            t.claudeSession = id
+            t.claudeCourse = course.isEmpty ? AppConfig.generalCourse : course
+            claude = ClaudeSession(id: id, folder: "", name: ClaudeSession.name(question: display, quote: t.quote), resume: resume)
+        } else {
+            t.claudeSession = nil
+            t.inClaude = false
+        }
         t.busy = true
         t.status = "Looking in your files"
         thread = t
         updateGlyph()
 
-        let course = session?.preset.course ?? ""
-        let settings = config.ai
-        let account = connectedAccount
         let linked = config.folders(for: course)
         // A connection test that is still running gives way to a real question.
         testToken += 1
@@ -1241,13 +1266,18 @@ final class AppModel: ObservableObject {
                     located = CourseStore.shared.locate(quote, course: course, hint: snapshot.sourceTitle, folders: linked)
                 }
             }
+            if claude != nil {
+                claude?.folder = CourseStore.shared.dir(snapshot.claudeCourse).path
+            }
+            let continuing = claude?.resume ?? false
             let text = Prompts.user(course: course, note: note, located: located, quote: snapshot.quote,
                                     hasImage: snapshot.imagePath != nil, sourceApp: snapshot.sourceApp,
-                                    sourceTitle: snapshot.sourceTitle, history: snapshot.history, question: prompt, files: files)
+                                    sourceTitle: snapshot.sourceTitle, history: continuing ? [] : snapshot.history,
+                                    question: prompt, files: files)
             let language = Prompts.answerLanguage(typed: snapshot.typed)
             let request = AIRequest(system: Prompts.system(language: language), prompt: text,
                                     imagePath: snapshot.imagePath, model: AIEngine.model(settings.model, for: kind),
-                                    folders: files?.folders ?? [])
+                                    folders: files?.folders ?? [], session: claude)
             DispatchQueue.main.async {
                 guard token == self.runToken else { return }
                 self.thread?.status = located.map { "Found it in \($0.file) p.\($0.page), writing" } ?? "Writing"
@@ -1285,15 +1315,28 @@ final class AppModel: ObservableObject {
             DispatchQueue.global(qos: .utility).async {
                 CourseStore.shared.appendLog(course: logCourse, quote: t.quote, question: t.question, answer: t.answer)
             }
+            // The first answer: the conversation goes into the Claude app's list, behind other windows.
+            if let id = t.claudeSession, !t.inClaude {
+                thread?.inClaude = true
+                ClaudeApp.keep(id)
+            }
             dlog("ask done")
         case .failed(let message):
             thread?.busy = false
             thread?.status = nil
             thread?.error = message
             thread?.errorAction = .retry
+            // A session that never got its first answer isn't handed over; trying again starts a new one.
+            if thread?.inClaude == false { thread?.claudeSession = nil }
             dlog("ask failed")
         }
         updateGlyph()
+    }
+
+    /// The question window's conversation, in the Claude app, in front.
+    func openInClaude() {
+        guard let t = thread, t.inClaude, let id = t.claudeSession else { return }
+        ClaudeApp.show(id)
     }
 
     func saveCard() {

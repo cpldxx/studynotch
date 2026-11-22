@@ -112,6 +112,32 @@ enum DevTools {
               && zip(asProject, asProject.dropFirst()).contains { $0 == "--add-dir" && $1 == "/c/A/materials" }
               && !asProject.contains("/c/A/text") && !asProject.contains("--allowedTools") && !asProject.contains("Bash")
               && asProject.contains("--no-session-persistence"))
+        // Kept in the Claude app: a named session in the course's folder; a follow-up continues it.
+        var keptRequest = projectRequest
+        keptRequest.folders = ["/c/A/text", "/c/A/materials", "/cache/text/x"]
+        keptRequest.session = ClaudeSession(id: "s-1", folder: "/c/A", name: "Explain: Theorem 2", resume: false)
+        let kept = AIEngine.claudeArguments(keptRequest)
+        let pairs = Array(zip(kept, kept.dropFirst()))
+        check("claude app: a kept question is a named session, saved, working in the course's folder",
+              pairs.contains { $0 == "--session-id" && $1 == "s-1" } && pairs.contains { $0 == "--name" && $1 == "Explain: Theorem 2" }
+              && !kept.contains("--no-session-persistence") && !kept.contains("--resume")
+              && !kept.contains("/c/A/text") && !kept.contains("/c/A/materials")
+              && pairs.contains { $0 == "--add-dir" && $1 == "/cache/text/x" }
+              && pairs.contains { $0 == "--tools" && $1 == "Read,Glob,Grep" })
+        keptRequest.session?.resume = true
+        let followUp = AIEngine.claudeArguments(keptRequest)
+        check("claude app: a follow-up continues the same session",
+              zip(followUp, followUp.dropFirst()).contains { $0 == "--resume" && $1 == "s-1" }
+              && !followUp.contains("--session-id") && !followUp.contains("--name") && !followUp.contains("--no-session-persistence"))
+        check("claude app: inside a folder means the folder or below it, not a name that starts the same",
+              AIEngine.isInside("/c/A/text", "/c/A") && AIEngine.isInside("/c/A", "/c/A/") && !AIEngine.isInside("/c/AB/text", "/c/A"))
+        check("claude app: a session's name is the question and the picked text, on one line, short",
+              ClaudeSession.name(question: "Explain", quote: "If f is\ndifferentiable") == "Explain: If f is differentiable"
+              && ClaudeSession.name(question: "", quote: nil) == "Question"
+              && ClaudeSession.name(question: "Explain", quote: String(repeating: "word ", count: 40)).count <= 70
+              && ClaudeSession.name(question: "Explain", quote: String(repeating: "word ", count: 40)).hasSuffix("…"))
+        check("claude app: the app's own link that adds a session to its list",
+              ClaudeApp.link("4eb2e1f1-02e6")?.absoluteString == "claude://resume?session=4eb2e1f1-02e6")
         let codexProject = AIEngine.codexArguments(projectRequest)
         check("chatgpt: works in the course's project folder, still read-only",
               zip(codexProject, codexProject.dropFirst()).contains { $0 == "-C" && $1 == "/c/A/text" }
@@ -623,6 +649,89 @@ enum DevTools {
     /// linked folder. The answer to the question is on pages that are NOT in the excerpt sent with
     /// it, so a right answer proves the AI opened the course's files by itself, as its project.
     /// Uses the user's AI account (STUDYNOTCH_AI picks which), so it is run by hand.
+    /// `--asktest-claude-app`: the real question flow (`AppModel.ask`) with Claude and the Mac's
+    /// sign-in, in a throw-away home: a question and a follow-up in course "STUDYNOTCH TEST". Checks
+    /// that the answers came, that Claude's session file holds both questions under the session's
+    /// name, and that the Claude app says it took the session (its own log). Uses the user's Claude
+    /// account, and leaves one "STUDYNOTCH TEST" session in the Claude app.
+    @MainActor
+    static func askClaudeAppTest() -> Bool {
+        _ = useTemporaryHome()
+        _ = NSApplication.shared
+        var failures = 0
+        func check(_ name: String, _ ok: Bool) {
+            if !ok { failures += 1 }
+            print("\(ok ? "PASS" : "FAIL")  \(name)")
+            fflush(stdout)
+        }
+        func spin(_ seconds: Double, until done: () -> Bool) {
+            let end = Date().addingTimeInterval(seconds)
+            while !done() && Date() < end { RunLoop.main.run(until: Date().addingTimeInterval(0.2)) }
+        }
+        CLILocator.shared.scan()
+        guard AIEngine.shared.installed(.claudeCLI) else { print("Claude Code is not on this Mac"); return false }
+        AIEngine.shared.refreshStatus()
+        spin(40) { AIEngine.shared.isSignedIn(.claudeCLI) != nil }
+        guard AIEngine.shared.isSignedIn(.claudeCLI) == true else { print("Claude isn't signed in on this Mac"); return false }
+
+        let m = AppModel()
+        m.config.ai = AISettings(provider: AIKind.claudeCLI.rawValue)
+        let course = "STUDYNOTCH TEST"
+        m.session = ActiveSession(preset: Preset(id: course, course: course, task: "", minutes: 25),
+                                  start: Date(), deadline: Date().addingTimeInterval(1500))
+        m.thread = AskThread(quote: "Theorem 2. If f is differentiable at (a,b), then f is continuous at (a,b).",
+                             imagePath: nil, sourceApp: "Preview", sourceTitle: "Lecture 9.pdf")
+        let started = Date()
+        m.ask(prompt: "Explain this in one short sentence.", display: "Explain this")
+        spin(240) { m.thread?.busy == false }
+        let first = m.thread
+        check("the first answer came (\(Int(Date().timeIntervalSince(started)))s)", !(first?.answer ?? "").isEmpty && first?.error == nil)
+        guard let id = first?.claudeSession, first?.inClaude == true else {
+            check("it is kept as a Claude session", false)
+            return false
+        }
+        print("session \(id)")
+
+        // Claude keeps it under ~/.claude/projects/<the course folder, spelled as a name>/<id>.jsonl.
+        let projects = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".claude/projects")
+        func transcript() -> String {
+            let dirs = (try? FileManager.default.contentsOfDirectory(at: projects, includingPropertiesForKeys: nil)) ?? []
+            for dir in dirs {
+                let file = dir.appendingPathComponent("\(id).jsonl")
+                if let text = try? String(contentsOf: file, encoding: .utf8) { return text }
+            }
+            return ""
+        }
+        let saved = transcript()
+        check("Claude saved the session, named after the question", saved.contains("Explain this in one short sentence")
+              && saved.contains(ClaudeSession.name(question: "Explain this", quote: first?.quote)))
+        let folder = CourseStore.shared.path(course).path
+        check("it worked in the course's folder", saved.contains(folder) || saved.contains("/private" + folder))
+
+        // The Claude app writes to its log when it takes a session from the link.
+        let log = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Logs/Claude/main.log")
+        var took = false
+        spin(20) {
+            let text = (try? String(contentsOf: log, encoding: .utf8)) ?? ""
+            took = text.contains("Imported CLI session \(id)") || text.contains("CLI session \(id) already imported")
+            return took
+        }
+        check("the Claude app took the session from its link", took)
+
+        m.ask(prompt: "Now say the same thing in at most six words.", display: "Shorter")
+        spin(240) { m.thread?.busy == false }
+        let second = m.thread
+        check("the follow-up was answered in the same session", !(second?.answer ?? "").isEmpty && second?.error == nil
+              && second?.claudeSession == id && second?.inClaude == true)
+        let after = transcript()
+        check("the session file holds both questions", after.contains("Explain this in one short sentence")
+              && after.contains("at most six words"))
+        print("first answer: \(first?.answer.prefix(160) ?? "")")
+        print("follow-up answer: \(second?.answer.prefix(160) ?? "")")
+        print(failures == 0 ? "all passed" : "\(failures) FAILED")
+        return failures == 0
+    }
+
     static func askCourseTest() -> Bool {
         let home = useTemporaryHome()
         CLILocator.shared.scan()
@@ -767,6 +876,17 @@ enum DevTools {
                 var t = thread()
                 t.question = "I don’t get this"
                 t.answer = answerText
+                m.thread = t
+                m.popupVisible = true
+            }),
+            ("12b-popup-in-claude", { m in
+                m.session = session()
+                var t = thread()
+                t.question = "I don’t get this"
+                t.answer = answerText
+                t.claudeSession = "example"
+                t.claudeCourse = "MATH 237"
+                t.inClaude = true
                 m.thread = t
                 m.popupVisible = true
             }),

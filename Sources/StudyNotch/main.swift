@@ -11,6 +11,11 @@ if arguments.contains("--eyes-sweep") {
     exit(0)
 }
 
+if arguments.contains("--asktest-claude-app") {
+    let ok = MainActor.assumeIsolated { DevTools.askClaudeAppTest() }
+    exit(ok ? 0 : 1)
+}
+
 if arguments.contains("--asktest-course") {
     exit(DevTools.askCourseTest() ? 0 : 1)
 }
