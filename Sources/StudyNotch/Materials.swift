@@ -241,10 +241,13 @@ final class CourseStore {
             let name = Self.textName(for: pdf, taken: &names)
             guard let indexed = index(pdf) else { continue }
             let target = textDir.appendingPathComponent(name)
+            // A text copy carries its PDF's date. Any other date means the PDF changed or the
+            // name belonged to another PDF (an older one included): write it again.
             let have = (try? fm.attributesOfItem(atPath: target.path))?[.modificationDate] as? Date
-            if have == nil || have! < indexed.stamp {
+            if have.map({ abs($0.timeIntervalSince(indexed.stamp)) > 0.001 }) ?? true {
                 try? Self.textFile(name: pdf.lastPathComponent, pages: indexed.pages)
                     .write(to: target, atomically: true, encoding: .utf8)
+                try? fm.setAttributes([.modificationDate: indexed.stamp], ofItemAtPath: target.path)
             }
         }
         for old in (try? fm.contentsOfDirectory(at: textDir, includingPropertiesForKeys: nil)) ?? []

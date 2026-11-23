@@ -352,6 +352,30 @@ enum DevTools {
               CourseStore.shared.syncText("PROJ 1", folders: [])?.count == 1
               && ((try? FileManager.default.contentsOfDirectory(atPath: mirror.path)) ?? []) == ["Own.txt"]
               && CourseStore.shared.syncText("PROJ 2", folders: []) == nil)
+        // Two PDFs with one name: when the first leaves, the second takes over its text file's name.
+        let twinShelf = home.appendingPathComponent("Shelf/Twins", isDirectory: true)
+        try? FileManager.default.createDirectory(at: twinShelf, withIntermediateDirectories: true)
+        let ownTwin = CourseStore.shared.dir("PROJ 3").appendingPathComponent("materials/Same.pdf")
+        makePDF(at: twinShelf.appendingPathComponent("Same.pdf"), pages: ["The linked words."])
+        makePDF(at: ownTwin, pages: ["The own words."])
+        try? FileManager.default.setAttributes([.modificationDate: Date(timeIntervalSinceNow: -3600)],
+                                               ofItemAtPath: twinShelf.appendingPathComponent("Same.pdf").path)
+        let twinText = CourseStore.shared.dir("PROJ 3").appendingPathComponent("text")
+        func twin(_ name: String) -> String { (try? String(contentsOf: twinText.appendingPathComponent(name), encoding: .utf8)) ?? "" }
+        CourseStore.shared.syncText("PROJ 3", folders: [twinShelf.path])
+        let twinsBefore = twin("Same.txt").contains("own words") && twin("Same (2).txt").contains("linked words")
+        // A mark in the text copy, under the date it had: it stays for as long as the copy isn't written again.
+        let copyDate = (try? FileManager.default.attributesOfItem(atPath: twinText.appendingPathComponent("Same.txt").path))?[.modificationDate] as? Date
+        try? "kept".write(to: twinText.appendingPathComponent("Same.txt"), atomically: true, encoding: .utf8)
+        try? FileManager.default.setAttributes([.modificationDate: copyDate ?? Date()], ofItemAtPath: twinText.appendingPathComponent("Same.txt").path)
+        CourseStore.shared.syncText("PROJ 3", folders: [twinShelf.path])
+        let untouched = twin("Same.txt") == "kept"
+        try? FileManager.default.removeItem(at: ownTwin)
+        CourseStore.shared.syncText("PROJ 3", folders: [twinShelf.path])
+        check("project: a text copy always holds its own PDF's words, also after another PDF had its name",
+              twinsBefore && twin("Same.txt").contains("linked words") && !twin("Same.txt").contains("own words")
+              && !FileManager.default.fileExists(atPath: twinText.appendingPathComponent("Same (2).txt").path))
+        check("project: a PDF that didn't change isn't written again", untouched)
         // Reading ahead runs in the background and can come after the course was renamed or removed.
         CourseStore.shared.warm("PROJ 9", folders: [projectShelf.path])
         check("project: reading ahead for a course whose folder is gone doesn't bring the folder back",
