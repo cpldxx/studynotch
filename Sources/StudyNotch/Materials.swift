@@ -79,7 +79,7 @@ final class CourseStore {
 
     /// The PDFs copied into the course's own folder.
     func ownMaterials(_ course: String) -> [URL] {
-        let folder = dir(course).appendingPathComponent("materials", isDirectory: true)
+        let folder = path(course).appendingPathComponent("materials", isDirectory: true)
         let items = (try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil)) ?? []
         return items.filter { $0.pathExtension.lowercased() == "pdf" }
             .sorted { $0.lastPathComponent < $1.lastPathComponent }
@@ -189,9 +189,10 @@ final class CourseStore {
     }
 
     /// Reads every PDF of the course once so the first question does not wait for it, and brings
-    /// the course's project folder up to date.
+    /// the course's project folder up to date. It runs in the background, so the course may have
+    /// been renamed or removed by the time it starts: it never makes the course's folder.
     func warm(_ course: String, folders: [String] = []) {
-        syncText(course, folders: folders)
+        syncText(course, folders: folders, make: false)
     }
 
     // MARK: - The course as an AI's project
@@ -219,13 +220,15 @@ final class CourseStore {
     /// Keeps `<course>/text` in step with the course's PDFs, its own and the linked folders':
     /// one text file per PDF, rewritten when the PDF changed, removed when the PDF left the
     /// course. This folder, with the copied PDFs, is what the connected AI may open by itself.
-    /// Linked folders are only read. Returns nil when the course has no PDF.
+    /// Linked folders are only read. Returns nil when the course has no PDF, or, with `make`
+    /// off, when the course's folder isn't there.
     @discardableResult
-    func syncText(_ course: String, folders: [String]) -> CourseFiles? {
+    func syncText(_ course: String, folders: [String], make: Bool = true) -> CourseFiles? {
         let fm = FileManager.default
-        let home = dir(course)
+        let home = make ? dir(course) : path(course)
         let textDir = home.appendingPathComponent("text", isDirectory: true)
-        try? fm.createDirectory(at: textDir, withIntermediateDirectories: true)
+        try? fm.createDirectory(at: textDir, withIntermediateDirectories: make)
+        guard make || Self.isFolder(textDir) else { return nil }
         var names = Set<String>()
         let pdfs = materials(course, folders: folders)
         for pdf in pdfs {

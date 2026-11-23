@@ -345,6 +345,12 @@ enum DevTools {
               CourseStore.shared.syncText("PROJ 1", folders: [])?.count == 1
               && ((try? FileManager.default.contentsOfDirectory(atPath: mirror.path)) ?? []) == ["Own.txt"]
               && CourseStore.shared.syncText("PROJ 2", folders: []) == nil)
+        // Reading ahead runs in the background and can come after the course was renamed or removed.
+        CourseStore.shared.warm("PROJ 9", folders: [projectShelf.path])
+        check("project: reading ahead for a course whose folder is gone doesn't bring the folder back",
+              !FileManager.default.fileExists(atPath: CourseStore.shared.path("PROJ 9").path)
+              && CourseStore.shared.ownMaterials("PROJ 9").isEmpty
+              && !FileManager.default.fileExists(atPath: CourseStore.shared.path("PROJ 9").path))
         let withFiles = Prompts.user(course: "PROJ 1", note: "", located: nil, quote: "q", hasImage: false, sourceApp: "", sourceTitle: "",
                                      history: [], question: "Why?", files: CourseFiles(text: "/c/text", pdfs: "/c/materials", count: 2))
         check("project: the question says where the course's files are, only when there are some",
