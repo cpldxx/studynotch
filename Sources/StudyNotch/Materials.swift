@@ -52,10 +52,16 @@ final class CourseStore {
     /// nothing behind in the real Trash.
     static var trasher: (URL) -> Bool = { (try? FileManager.default.trashItem(at: $0, resultingItemURL: nil)) != nil }
 
+    /// Pure: the name of a course's folder. "/" and ":" can't be in a file name; "." and ".."
+    /// would be the Courses folder itself and the one above it, never a folder of the course's own.
+    static func folderName(_ course: String) -> String {
+        let safe = course.replacingOccurrences(of: "/", with: "-").replacingOccurrences(of: ":", with: "-")
+        return safe == "." || safe == ".." ? String(repeating: "-", count: safe.count) : safe
+    }
+
     /// Where a course's folder is (whether or not it has been made yet).
     func path(_ course: String) -> URL {
-        let safe = course.replacingOccurrences(of: "/", with: "-").replacingOccurrences(of: ":", with: "-")
-        return Paths.courses.appendingPathComponent(safe, isDirectory: true)
+        Paths.courses.appendingPathComponent(Self.folderName(course), isDirectory: true)
     }
 
     func dir(_ course: String) -> URL {

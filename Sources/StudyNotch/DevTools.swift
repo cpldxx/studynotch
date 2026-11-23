@@ -292,6 +292,13 @@ enum DevTools {
         check("course names: empty, taken and the built-in one are refused",
               !linking.canName("  ") && !linking.canName("algebra") && !linking.canName("General") && linking.canName("Calculus")
               && linking.canName("ALGEBRA", renaming: "Algebra") && !linking.canName("Algebra", renaming: "Algebra"))
+        var slashed = linking
+        slashed.presets.append(Preset(id: "A/B", course: "A/B", task: "", minutes: 50))
+        check("course names: a name whose folder is another course's, or not a folder of its own, is refused",
+              !slashed.canName("A-B") && !slashed.canName("a:b") && slashed.canName("A/C") && slashed.canName("A-B", renaming: "A/B")
+              && !linking.canName("..") && !linking.canName(".") && !linking.canName("/")
+              && CourseStore.shared.path("..").standardizedFileURL.path.hasPrefix(Paths.courses.standardizedFileURL.path + "/")
+              && CourseStore.shared.path(".").standardizedFileURL.path.hasPrefix(Paths.courses.standardizedFileURL.path + "/"))
         linking.rename("Algebra", to: "Algebra II")
         check("rename: the course, its id and its folders move together",
               linking.courses == ["General", "Algebra II"] && linking.folders(for: "Algebra II") == ["/x/Algebra"]

@@ -233,11 +233,15 @@ extension AppConfig {
         }
     }
 
-    /// Pure: whether a course can be called this. Empty, taken and the built-in name are refused.
+    /// Pure: whether a course can be called this. Empty, taken and the built-in name are refused,
+    /// and so is a name that would share another course's folder ("A-B" beside "A/B") or have no
+    /// folder of its own (".."): removing that course would put someone else's files in the Trash.
     func canName(_ name: String, renaming old: String? = nil) -> Bool {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, trimmed != old else { return false }
-        return !courses.contains { $0.caseInsensitiveCompare(trimmed) == .orderedSame && $0 != old }
+        guard !trimmed.allSatisfy({ "/:.".contains($0) }) else { return false }
+        let folder = CourseStore.folderName(trimmed)
+        return !courses.contains { $0 != old && CourseStore.folderName($0).caseInsensitiveCompare(folder) == .orderedSame }
     }
 
     /// Renames a course everywhere in the settings.
