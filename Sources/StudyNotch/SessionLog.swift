@@ -48,22 +48,24 @@ enum SessionLog {
     }
 
     /// A course was renamed: its past sessions follow it, so "stuck last time" still finds them.
+    /// Only that course's lines are written again. Every other line, one that can't be read included,
+    /// stays as it is: the log is the student's record, and a rename is no reason to drop any of it.
     static func rename(_ old: String, to new: String) {
+        guard let text = try? String(contentsOf: Paths.sessions, encoding: .utf8) else { return }
         var changed = false
-        let records = all().map { record -> SessionRecord in
-            guard record.course == old else { return record }
-            changed = true
-            var r = record
-            r.course = new
-            return r
-        }
-        guard changed else { return }
         var data = Data()
-        for record in records {
-            guard let line = try? encoder.encode(record) else { return }
-            data.append(line)
+        for line in text.split(separator: "\n") {
+            var out = Data(line.utf8)
+            if var record = try? decoder.decode(SessionRecord.self, from: out), record.course == old {
+                record.course = new
+                guard let written = try? encoder.encode(record) else { return }
+                out = written
+                changed = true
+            }
+            data.append(out)
             data.append(0x0A)
         }
+        guard changed else { return }
         try? data.write(to: Paths.sessions, options: .atomic)
     }
 

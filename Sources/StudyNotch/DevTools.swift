@@ -94,6 +94,19 @@ enum DevTools {
                                         focusSeconds: 2400, distractSeconds: 120, questions: ["I don’t get this: Theorem 2"]))
         check("last stuck comes back", SessionLog.lastStuck(course: course) == ["I don’t get this: Theorem 2"])
         check("other course has none", SessionLog.lastStuck(course: "NONE").isEmpty)
+        // A line that can't be read (a half-written one, or one from another version) is nobody's to throw away.
+        let logBefore = try? Data(contentsOf: Paths.sessions)
+        let damaged = #"{"course":"TEST 101","task":"Reading","start":"2026-11-0"#
+        try? ((logBefore ?? Data()) + Data((damaged + "\n").utf8)).write(to: Paths.sessions)
+        SessionLog.append(SessionRecord(course: "OLD 100", task: "", start: Date(), end: Date(), plannedMinutes: 50,
+                                        focusSeconds: 60, distractSeconds: 0, questions: ["Why?"]))
+        SessionLog.rename("OLD 100", to: "NEW 100")
+        let renamedLog = (try? String(contentsOf: Paths.sessions, encoding: .utf8)) ?? ""
+        check("renaming a course keeps a log line it can't read",
+              SessionLog.lastStuck(course: "NEW 100") == ["Why?"] && SessionLog.lastStuck(course: "OLD 100").isEmpty
+              && renamedLog.components(separatedBy: "\n").contains(damaged)
+              && SessionLog.lastStuck(course: course) == ["I don’t get this: Theorem 2"])
+        if let logBefore { try? logBefore.write(to: Paths.sessions) }
 
         // Command lines
         let textRequest = AIRequest(system: "SYS", prompt: "PROMPT", imagePath: nil, model: "")
