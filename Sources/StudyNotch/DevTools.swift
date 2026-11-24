@@ -106,6 +106,12 @@ enum DevTools {
               SessionLog.lastStuck(course: "NEW 100") == ["Why?"] && SessionLog.lastStuck(course: "OLD 100").isEmpty
               && renamedLog.components(separatedBy: "\n").contains(damaged)
               && SessionLog.lastStuck(course: course) == ["I don’t get this: Theorem 2"])
+        // A log that stops in the middle of a line (the Mac went down while it was written).
+        try? ((logBefore ?? Data()) + Data(damaged.utf8)).write(to: Paths.sessions)
+        SessionLog.append(SessionRecord(course: "OLD 100", task: "", start: Date(), end: Date(), plannedMinutes: 50,
+                                        focusSeconds: 60, distractSeconds: 0, questions: ["After the cut"]))
+        check("a session saved after a half-written line starts its own line",
+              SessionLog.lastStuck(course: "OLD 100") == ["After the cut"])
         if let logBefore { try? logBefore.write(to: Paths.sessions) }
 
         // Command lines

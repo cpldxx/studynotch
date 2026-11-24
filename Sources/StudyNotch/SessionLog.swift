@@ -30,8 +30,14 @@ enum SessionLog {
         Paths.ensure()
         guard var data = try? encoder.encode(record) else { return }
         data.append(0x0A)
-        if let handle = try? FileHandle(forWritingTo: Paths.sessions) {
+        if let handle = try? FileHandle(forUpdating: Paths.sessions) {
             defer { try? handle.close() }
+            // A log that ends in the middle of a line (the Mac went down while it was written) would
+            // take this session into that line, and neither could be read again.
+            if let size = try? handle.seekToEnd(), size > 0, (try? handle.seek(toOffset: size - 1)) != nil,
+               let last = try? handle.read(upToCount: 1), last != Data([0x0A]) {
+                data.insert(0x0A, at: 0)
+            }
             _ = try? handle.seekToEnd()
             try? handle.write(contentsOf: data)
         } else {
