@@ -75,6 +75,7 @@ Then select some text anywhere, right-click, and press **Ask StudyNotch** above 
 
 <p align="center"><img src="site/assets/img/app/15b-course-graph-picked.png" width="720" alt="The MATH 237 course window: a graph of dots and lines, with Theorem 4.3 (Second Derivative Test) picked. Beside it: it uses Definition 4.1 (Critical point) and Definition 4.2 (Hessian matrix), is used by Example 4.4, and its page from Lecture 7-8.pdf"></p>
 
+- **Profile**, in the same window, reads the course’s outline, quizzes and exams with your AI, once, when you press **Write the profile**. It writes down how the course is graded and tested: dates, what the quizzes and exams look like, what comes up most, and how to prepare, each fact with its file and page. Every question in the course gets it after that.
 - What you pick for a new course only waits in the list. **Add** makes the course; close the tab without it and nothing is kept.
 - **Edit** on a course’s card changes it later: link or unlink folders, add or remove PDFs, rename it, or remove it. Removed things go to the Trash.
 
@@ -95,6 +96,7 @@ Answers come back in the language you type: ask in Korean and the answer is in K
 | The selected text, or one capture | Which apps and sites you visited |
 | Your course notes and the text of the matching page | Files in a linked folder that aren’t PDFs |
 | The course’s memory (a line for each earlier question in it) and its file names by kind | |
+| The course’s profile; and, only when you press **Write the profile**, the first pages of its outline, quizzes and exams | |
 | Any page of the course’s PDFs the AI opens to answer | Your password: every sign-in happens in the service’s own page |
 | The app and window title you were reading in, and your question | |
 

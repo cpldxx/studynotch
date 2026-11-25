@@ -713,6 +713,51 @@ final class AppModel: ObservableObject {
         NSWorkspace.shared.open(CourseStore.shared.dir(course))
     }
 
+    /// Writes a course's profile in the background (its own engine, so a question doesn't stop it).
+    private let profileEngine = AIEngine()
+
+    /// "Write the profile": the connected AI reads the course's outline, quizzes and exams and
+    /// writes how the course is graded and tested into `profile.md`. One real request, only when
+    /// pressed. `done` gets an error to show, or nil when it was written.
+    func writeProfile(_ course: String, done: @escaping (String?) -> Void) {
+        guard let kind = activeAI else {
+            done(connectedAI.map { "\($0.label) isn’t signed in anymore. Sign in again from the menu bar icon." }
+                 ?? "Connect Claude, ChatGPT or Gemini first, from the menu bar icon.")
+            return
+        }
+        let linked = config.folders(for: course)
+        let model = AIEngine.model(config.ai.model, for: kind)
+        let account = connectedAccount
+        DispatchQueue.global(qos: .userInitiated).async {
+            let sources = CourseStore.shared.profileSources(course, folders: linked)
+            let project = kind == .apiKey ? nil : CourseStore.shared.syncText(course, folders: linked)
+            let request = AIRequest(system: Prompts.profileSystem,
+                                    prompt: Prompts.profileRequest(course: course, kinds: sources.kinds, sources: sources.text),
+                                    imagePath: nil, model: model, folders: project?.folders ?? [])
+            DispatchQueue.main.async {
+                guard !sources.text.isEmpty else {
+                    done("Add the course outline, quizzes or exams first.")
+                    return
+                }
+                var text = ""
+                dlog("profile via \(kind.rawValue)")
+                self.profileEngine.run(request, kind: kind, account: account) { event in
+                    switch event {
+                    case .delta(let piece): text += piece
+                    case .replace(let whole): text = whole
+                    case .status: break
+                    case .done:
+                        let written = text.trimmingCharacters(in: .whitespacesAndNewlines)
+                        guard !written.isEmpty else { done("The profile came back empty. Try again."); return }
+                        CourseStore.shared.saveProfile(course, text: written + "\n")
+                        done(nil)
+                    case .failed(let message): done(message)
+                    }
+                }
+            }
+        }
+    }
+
     /// "Graph" on a course's card: the course window, with how its notes connect.
     func openCourseWindow(_ course: String) {
         guard course != AppConfig.generalCourse, !previewMode else { return }
@@ -1279,7 +1324,9 @@ final class AppModel: ObservableObject {
             var files: CourseFiles?
             var kinds: [(kind: MaterialKind, names: [String])] = []
             var memory: [String] = []
+            var profile = ""
             if !course.isEmpty, course != AppConfig.generalCourse {
+                profile = CourseStore.shared.profile(course)
                 // What every question in the course shares, like a project: its notes, its memory,
                 // its files by kind.
                 note = CourseStore.shared.note(course)
@@ -1304,7 +1351,7 @@ final class AppModel: ObservableObject {
             let text = Prompts.user(course: course, note: note, located: located, quote: snapshot.quote,
                                     hasImage: snapshot.imagePath != nil, sourceApp: snapshot.sourceApp,
                                     sourceTitle: snapshot.sourceTitle, history: continuing ? [] : snapshot.history,
-                                    question: prompt, files: files, kinds: kinds, memory: memory)
+                                    question: prompt, files: files, kinds: kinds, memory: memory, profile: profile)
             let language = Prompts.answerLanguage(typed: snapshot.typed)
             let request = AIRequest(system: Prompts.system(language: language), prompt: text,
                                     imagePath: snapshot.imagePath, model: AIEngine.model(settings.model, for: kind),

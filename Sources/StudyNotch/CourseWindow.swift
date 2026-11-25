@@ -4,7 +4,7 @@ import SwiftUI
 
 /// What the course window shows. One window, for one course at a time.
 final class CourseWindowState: ObservableObject {
-    enum Tab: String, CaseIterable { case graph = "Graph", files = "Files" }
+    enum Tab: String, CaseIterable { case graph = "Graph", profile = "Profile", files = "Files" }
 
     @Published var course = ""
     @Published var tab: Tab = .graph
@@ -14,7 +14,30 @@ final class CourseWindowState: ObservableObject {
     @Published var loading = false
     @Published var selected: String?
     @Published var hovered: String?
+    /// How the course is taught and tested, as the AI wrote it (`profile.md`).
+    @Published var profile = ""
+    @Published var profileDate: Date?
+    @Published var writing = false
+    @Published var profileError: String?
+    /// Which AI would write it ("Claude"), or nil when none is connected.
+    @Published var aiLabel: String?
+    /// Writes the profile with the connected AI; set by the window's controller.
+    var onWrite: ((String, @escaping (String?) -> Void) -> Void)?
     private var token = 0
+
+    func writeProfile() {
+        guard !writing, let onWrite else { return }
+        writing = true
+        profileError = nil
+        let course = course
+        onWrite(course) { [weak self] error in
+            guard let self, self.course == course else { return }
+            self.writing = false
+            self.profileError = error
+            self.profile = CourseStore.shared.profile(course)
+            self.profileDate = CourseStore.shared.profileDate(course)
+        }
+    }
 
     /// Reads the course's files and builds its graph off the main thread.
     func load(_ course: String, folders: [String]) {
@@ -23,7 +46,11 @@ final class CourseWindowState: ObservableObject {
             hovered = nil
             graph = nil
             files = []
+            writing = false
+            profileError = nil
         }
+        profile = CourseStore.shared.profile(course)
+        profileDate = CourseStore.shared.profileDate(course)
         self.course = course
         loading = true
         token += 1
@@ -55,6 +82,8 @@ final class CourseWindowController {
     }
 
     func show(_ course: String) {
+        state.aiLabel = model.activeAI?.label
+        state.onWrite = { [weak model] course, done in model?.writeProfile(course, done: done) }
         state.load(course, folders: model.config.folders(for: course))
         if window == nil {
             let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1080, height: 700),
@@ -112,6 +141,7 @@ struct CourseWindowView: View {
             Group {
                 switch state.tab {
                 case .graph: GraphPane(state: state)
+                case .profile: ProfilePane(state: state)
                 case .files: FilesPane(state: state)
                 }
             }
@@ -383,6 +413,88 @@ struct PagePreview: View {
         cache[key] = image
         lastShown = key
         return image
+    }
+}
+
+// MARK: - Profile
+
+/// How the course is taught and tested: written by the connected AI from the course's outline,
+/// quizzes and exams, only when asked, and sent with every question in the course after that.
+struct ProfilePane: View {
+    @ObservedObject var state: CourseWindowState
+    @State private var height: CGFloat = 200
+
+    var body: some View {
+        let sources = state.files.filter { CourseStore.profileKinds.contains($0.kind) }
+        ScrollView {
+            VStack(alignment: .leading, spacing: 14) {
+                if state.profile.isEmpty {
+                    Text("How this course works").font(.system(size: 14, weight: .semibold))
+                    Text("StudyNotch can read this course’s outline, quizzes and exams and write down how it is graded and tested: the dates, what the quizzes and exams look like, what comes up most, and how to prepare. After that, every question you ask in this course gets it too.")
+                        .font(.system(size: 13)).foregroundColor(Ink.icon).fixedSize(horizontal: false, vertical: true)
+                    Text(Self.sourcesLine(sources)).font(.system(size: 12)).foregroundColor(Ink.faint)
+                } else {
+                    AnswerWebView(markdown: state.profile, height: $height)
+                        .frame(height: max(height, 120))
+                    Text(Self.writtenLine(state.profileDate))
+                        .font(.system(size: 11.5)).foregroundColor(Ink.faint)
+                }
+                HStack(spacing: 12) {
+                    if state.writing {
+                        ProgressView().controlSize(.small)
+                        Text("Reading the outline, quizzes and exams\(state.aiLabel.map { " with \($0)" } ?? "")")
+                            .font(.system(size: 12)).foregroundColor(Ink.icon)
+                    } else {
+                        CardButton(state.profile.isEmpty ? "Write the profile" : "Write it again", filled: state.profile.isEmpty) {
+                            state.writeProfile()
+                        }
+                        .opacity(sources.isEmpty || state.aiLabel == nil ? 0.4 : 1)
+                        .allowsHitTesting(!sources.isEmpty && state.aiLabel != nil)
+                        .testTag("Write the profile")
+                        Text(Self.buttonNote(ai: state.aiLabel, sources: !sources.isEmpty))
+                            .font(.system(size: 11.5)).foregroundColor(Ink.faint)
+                    }
+                }
+                if let error = state.profileError {
+                    Text(error).font(.system(size: 12)).foregroundColor(Ink.text)
+                }
+            }
+            .padding(.horizontal, 84)
+            .padding(.vertical, 20)
+            .frame(maxWidth: 860, alignment: .leading)
+        }
+    }
+
+    /// Pure: what the profile would be written from: "From 1 course outline, 4 quizzes and 2 exams."
+    static func sourcesLine(_ groups: [(kind: MaterialKind, pdfs: [URL])]) -> String {
+        guard !groups.isEmpty else { return "Add the course outline, quizzes or exams first: none of this course’s files are those yet." }
+        let parts = groups.map { "\($0.pdfs.count) \($0.pdfs.count == 1 ? singular($0.kind) : $0.kind.rawValue.lowercased())" }
+        let list = parts.count == 1 ? parts[0] : parts.dropLast().joined(separator: ", ") + " and " + parts.last!
+        return "From \(list)."
+    }
+
+    private static func singular(_ kind: MaterialKind) -> String {
+        switch kind {
+        case .outline: return "course outline"
+        case .quizzes: return "quiz"
+        case .exams: return "exam"
+        case .examPrep: return "exam prep file"
+        case .assignments: return "assignment"
+        default: return kind.rawValue.lowercased()
+        }
+    }
+
+    /// Pure: what pressing the button costs.
+    static func buttonNote(ai: String?, sources: Bool) -> String {
+        guard let ai else { return "Connect an AI first, from the menu bar icon." }
+        guard sources else { return "" }
+        return "Sends the first pages of these files to \(ai), once. It counts toward your plan."
+    }
+
+    /// Pure: under the profile.
+    static func writtenLine(_ date: Date?) -> String {
+        let day = date.map { DateFormatter.localizedString(from: $0, dateStyle: .medium, timeStyle: .none) }
+        return "Written\(day.map { " on \($0)" } ?? "") from this course’s files. It goes with every question you ask in this course; delete profile.md in the course’s folder to stop that."
     }
 }
 

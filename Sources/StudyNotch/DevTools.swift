@@ -584,6 +584,26 @@ enum DevTools {
               && GraphPane.shortLabel(graph.node("Lecture 3.pdf#Theorem 3.3")!) == "Squeeze Theorem"
               && CourseWindowView.summary(graph, files: 2, loading: false) == "5 dots · 5 lines · 2 files"
               && CourseWindowView.summary(nil, files: 0, loading: true) == "Reading the notes")
+        // The course profile (the user's request, 2026-11-25)
+        let sourceText = CourseStore.profileSources([(name: "Course outline.pdf", pages: ["Grading: quizzes 20%, midterm 30%, final 50%.", "", "Page 3", "Page 4"]),
+                                                     (name: "Quiz 1.pdf", pages: [String(repeating: "x", count: 3000)])], limit: 2000)
+        check("profile: the first pages of each file, marked with name and page, empty pages skipped, cut at the limit",
+              sourceText.hasPrefix("=== Course outline.pdf, page 1 ===\nGrading: quizzes 20%") && sourceText.contains("=== Course outline.pdf, page 3 ===")
+              && !sourceText.contains("page 2 ===") && !sourceText.contains("page 4 ===") && !sourceText.contains("Quiz 1.pdf"))
+        let profiled = Prompts.user(course: "PROJ 1", note: "", located: nil, quote: "q", hasImage: false, sourceApp: "", sourceTitle: "",
+                                    history: [], question: "Why?", profile: "## Grading\n- Midterm 30% (Course outline.pdf p.1)")
+        check("profile: every question in the course carries it; writing it sends the files' text, by kind",
+              profiled.contains("<course_profile>") && profiled.contains("Midterm 30%") && !withFiles.contains("<course_profile>")
+              && Prompts.profileRequest(course: "PROJ 1", kinds: [(.quizzes, ["Quiz 1.pdf"])], sources: sourceText).contains("- Quizzes: Quiz 1.pdf")
+              && Prompts.profileSystem.contains("## Grading"))
+        CourseStore.shared.saveProfile("PROJ 1", text: "## Grading\n- Midterm 30%\n")
+        check("profile: kept as profile.md in the course's folder", CourseStore.shared.profile("PROJ 1") == "## Grading\n- Midterm 30%\n"
+              && CourseStore.shared.profileDate("PROJ 1") != nil && CourseStore.shared.profile("PROJ 2").isEmpty)
+        check("profile: the window says what it would be written from and what pressing costs",
+              ProfilePane.sourcesLine([(.outline, [URL(fileURLWithPath: "/c/o.pdf")]), (.quizzes, [URL(fileURLWithPath: "/c/q1.pdf"), URL(fileURLWithPath: "/c/q2.pdf")]),
+                                       (.exams, [URL(fileURLWithPath: "/c/m.pdf")])]) == "From 1 course outline, 2 quizzes and 1 exam."
+              && ProfilePane.buttonNote(ai: "Claude", sources: true).contains("to Claude, once")
+              && ProfilePane.buttonNote(ai: nil, sources: true).hasPrefix("Connect an AI"))
         check("sorting: the course's list shows each copy with its kind, in the kinds' order",
               CourseStore.shared.items("SORT 1", folders: []).map(\.group) == [.assignments, .examPrep]
               && CourseStore.shared.byKind("SORT 1").map(\.kind) == [.assignments, .examPrep])
@@ -933,6 +953,56 @@ enum DevTools {
           Theorem 5.2 (Inverse Mapping Theorem). If the Jacobian is invertible at a, the mapping has a local inverse. The proof uses Theorem 3.1.
           Example 5.3. For polar coordinates the Jacobian is r.
           """])]
+    }
+
+    /// Writes a course's profile for real with Claude, from an outline, a quiz and a midterm.
+    @MainActor
+    static func askProfileTest() -> Bool {
+        _ = useTemporaryHome()
+        _ = NSApplication.shared
+        var failures = 0
+        func check(_ name: String, _ ok: Bool) {
+            if !ok { failures += 1 }
+            print("\(ok ? "PASS" : "FAIL")  \(name)")
+            fflush(stdout)
+        }
+        func spin(_ seconds: Double, until done: () -> Bool) {
+            let end = Date().addingTimeInterval(seconds)
+            while !done() && Date() < end { RunLoop.main.run(until: Date().addingTimeInterval(0.2)) }
+        }
+        CLILocator.shared.scan()
+        guard AIEngine.shared.installed(.claudeCLI) else { print("Claude Code is not on this Mac"); return false }
+        AIEngine.shared.refreshStatus()
+        spin(40) { AIEngine.shared.isSignedIn(.claudeCLI) != nil }
+        guard AIEngine.shared.isSignedIn(.claudeCLI) == true else { print("Claude isn't signed in on this Mac"); return false }
+
+        let course = "STUDYNOTCH PROFILE"
+        let own = CourseStore.shared.dir(course).appendingPathComponent("materials")
+        makePDF(at: own.appendingPathComponent("Course outline.pdf"), pages: [
+            "MATH 237 Course Outline. Grading: quizzes 20%, midterm 30%, final exam 50%. Quizzes are on Crowdmark every second Friday, 15 minutes each.",
+            "Important dates: Midterm on Tuesday, October 21, in class. The final exam is set by the Registrar."])
+        makePDF(at: own.appendingPathComponent("Quiz 2.pdf"), pages: [
+            "Quiz 2. Question 1 (4 marks): Classify the critical points of f(x,y) = x^3 - 3x + y^2 with the Second Derivative Test."])
+        makePDF(at: own.appendingPathComponent("Midterm 2024.pdf"), pages: [
+            "Midterm Examination 2024. Question 1 (10 marks): Classify the critical points of f(x,y) = x^2 y - y^2 with the Second Derivative Test. Question 2 (6 marks): prove the limit exists using the definition."])
+        CourseStore.shared.sortOwn(course)
+
+        let m = AppModel()
+        m.config.ai = AISettings(provider: AIKind.claudeCLI.rawValue, keepInClaude: false)
+        var result: String??
+        let started = Date()
+        m.writeProfile(course) { result = .some($0) }
+        spin(300) { result != nil }
+        let profile = CourseStore.shared.profile(course)
+        check("the profile was written (\(Int(Date().timeIntervalSince(started)))s)", result == .some(nil) && !profile.isEmpty)
+        check("it has the headings in order", ["## Grading", "## Dates", "## Quizzes", "## Exams", "## What comes up most", "## How to prepare"]
+              .map { profile.range(of: $0)?.lowerBound }.compactMap { $0 }.count == 6)
+        check("it has the grading and the midterm's date from the outline", profile.contains("30%") && profile.contains("21"))
+        check("it found what comes up most: the Second Derivative Test, in the quiz and the midterm", profile.contains("Second Derivative Test"))
+        check("it says where each fact is", profile.contains("Course outline.pdf p.") && (profile.contains("Quiz 2.pdf p.") || profile.contains("Midterm 2024.pdf p.")))
+        print(profile.prefix(900))
+        print(failures == 0 ? "all passed" : "\(failures) FAILED")
+        return failures == 0
     }
 
     @MainActor
@@ -1360,7 +1430,24 @@ enum DevTools {
             s.linked = Set(sample.map(\.path))
             return s
         }
-        for (name, state) in [("15-course-graph", courseState(.graph)),
+        let profiled = courseState(.profile)
+        profiled.aiLabel = "Claude"
+        profiled.profileDate = Date(timeIntervalSince1970: 1_795_000_000)
+        profiled.profile = """
+        ## Grading
+        - Quizzes 20%, midterm 30%, final exam 50% (Course outline F25.pdf p.1)
+        ## Dates
+        - Midterm on Tuesday, October 21, in class (Course outline F25.pdf p.2)
+        ## Quizzes
+        - Every second Friday on Crowdmark, 15 minutes, two short questions (Quiz 1.pdf p.1)
+        ## Exams
+        - The midterm had 5 questions; one asked for a full proof with the $\\varepsilon$–$\\delta$ definition (Midterm 2024.pdf p.1)
+        ## What comes up most
+        - Classifying critical points with the Second Derivative Test, in every quiz and the midterm (Quiz 2.pdf p.1)
+        ## How to prepare
+        - Redo the practice midterm with a timer; it follows the real one's order (Practice midterm.pdf p.1)
+        """
+        for (name, state) in [("15-course-graph", courseState(.graph)), ("15d-course-profile", profiled),
                               ("15b-course-graph-picked", courseState(.graph, picked: "Lecture 7-8.pdf#Theorem 4.3")),
                               ("15c-course-files", courseState(.files))] {
             snapshot(name, canvas: windowSize, view: CourseWindowView(state: state).frame(width: windowSize.width, height: windowSize.height)) {

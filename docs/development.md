@@ -22,6 +22,7 @@ The build is signed with a Developer ID or Apple Development certificate when th
 | `.build/debug/StudyNotch --asktest [image]` | One real question, as the app sends it. `STUDYNOTCH_AI=codex-cli` picks ChatGPT | Yes |
 | `.build/debug/StudyNotch --asktest-claude-app` | The real question flow with Claude: a question and a follow-up kept as one named session in the course’s folder, and the Claude app taking it (its log). Leaves one “STUDYNOTCH TEST” session in the Claude app | Yes |
 | `.build/debug/StudyNotch --asktest-memory` | A real question with Claude in a course that already has a memory line and a quiz: the answer has to quote the earlier question and name the quiz. Not kept in the Claude app | Yes |
+| `.build/debug/StudyNotch --asktest-profile` | Writes a course's profile for real with Claude from an outline, a quiz and a midterm: the grading, the midterm's date and what comes up most, each with its file and page | Yes |
 | `.build/debug/StudyNotch --asktest-course` | A real question the AI can only answer by opening the course’s files itself | Yes |
 | `.build/debug/StudyNotch --render <folder>` | A picture of every island and question-window state, to look at | No |
 | `.build/debug/StudyNotch --render-site site/assets/img/app` | The same pictures on a transparent background, for the site and this README | No |
@@ -57,7 +58,7 @@ Signing in to Cloudflare (`npx wrangler@4 login`) is done by the owner of the ac
 | `Sources/StudyNotch/RightClickWatcher.swift`, `SelectionWatcher.swift` | The button above the right-click menu, and reading the selected text |
 | `Sources/StudyNotch/ScreenshotWatcher.swift`, `FocusWatcher.swift` | New screenshots and captures; the front app, window and tab, and the drift rules |
 | `Sources/StudyNotch/Materials.swift` | Course folders, linked folders, reading PDFs, finding the page of a sentence, the text copies an AI may open |
-| `Sources/StudyNotch/CourseGraph.swift`, `CourseWindow.swift` | A course's graph: definitions, theorems and examples read from its notes and which use which; the window that shows it, a picked item's page and the files by kind |
+| `Sources/StudyNotch/CourseGraph.swift`, `CourseWindow.swift` | A course's graph: definitions, theorems and examples read from its notes and which use which; the window that shows it, a picked item's page, the course's profile and its files by kind |
 | `Sources/StudyNotch/ClaudeApp.swift` | Handing questions kept as Claude Code sessions to the Claude app with its own `claude://resume` link |
 | `Sources/StudyNotch/AIEngine.swift`, `Prompts.swift` | Claude, ChatGPT (Codex), Gemini (`agy`) and the API key; sign-in checks; what is sent and the rules given to the AI |
 | `Sources/StudyNotch/Config.swift`, `SessionLog.swift` | The settings file and session history |
@@ -80,6 +81,7 @@ Signing in to Cloudflare (`npx wrangler@4 login`) is done by the owner of the ac
     ├── materials/       PDFs copied into the course, one folder per kind (Lecture notes, Quizzes, Exams, …)
     ├── text/            every PDF of the course as text, page by page: what the AI may open
     ├── memory.md        a line per question asked in the course; the latest go with each question
+    ├── profile.md       how the course is graded and tested, written by the AI when you ask
     ├── cards.md         review cards
     └── log/             questions and answers by date
 ```

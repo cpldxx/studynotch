@@ -572,6 +572,48 @@ final class CourseStore {
         append(entry, to: file)
     }
 
+    // MARK: - The course's profile: how it is taught and tested
+
+    /// The kinds a profile is written from.
+    static let profileKinds: [MaterialKind] = [.outline, .quizzes, .exams, .examPrep, .assignments]
+
+    /// `<course>/profile.md`, as the AI last wrote it (empty when there is none).
+    func profile(_ course: String) -> String {
+        let text = (try? String(contentsOf: path(course).appendingPathComponent("profile.md"), encoding: .utf8)) ?? ""
+        return String(text.prefix(5000))
+    }
+
+    func profileDate(_ course: String) -> Date? {
+        (try? FileManager.default.attributesOfItem(atPath: path(course).appendingPathComponent("profile.md").path))?[.modificationDate] as? Date
+    }
+
+    func saveProfile(_ course: String, text: String) {
+        try? text.write(to: dir(course).appendingPathComponent("profile.md"), atomically: true, encoding: .utf8)
+    }
+
+    /// Pure: the text a profile is written from: the first pages of each file, marked with its
+    /// name and page so the AI can say where a fact is, and no more than `limit` characters.
+    static func profileSources(_ files: [(name: String, pages: [String])], pagesEach: Int = 3, limit: Int = 30000) -> String {
+        var out = ""
+        for file in files {
+            for (i, page) in file.pages.prefix(pagesEach).enumerated() {
+                let body = page.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !body.isEmpty else { continue }
+                let block = "=== \(file.name), page \(i + 1) ===\n" + String(body.prefix(2500)) + "\n\n"
+                if out.count + block.count > limit { return out }
+                out += block
+            }
+        }
+        return out
+    }
+
+    /// The course's outline, quizzes, exams, exam prep and assignments, as `profileSources`.
+    func profileSources(_ course: String, folders: [String]) -> (text: String, kinds: [(kind: MaterialKind, names: [String])]) {
+        let groups = byKind(course, folders: folders).filter { Self.profileKinds.contains($0.kind) }
+        let files = groups.flatMap(\.pdfs).map { (name: $0.lastPathComponent, pages: pages(of: $0)) }
+        return (Self.profileSources(files), groups.map { ($0.kind, $0.pdfs.map(\.lastPathComponent)) })
+    }
+
     // MARK: - The course's memory: what was asked in it before
 
     /// Pure: one line of a course's memory: the day, the question, the picked text and where the

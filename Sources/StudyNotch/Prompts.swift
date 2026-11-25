@@ -81,10 +81,34 @@ enum Prompts {
         return out
     }
 
+    /// The rules for writing a course's profile (the user's request, 2026-11-25: from the sorted
+    /// files, how this professor or course does things).
+    static let profileSystem = """
+    You read a university course's own files and write a short profile of how this course is taught and tested, for the student taking it.
+
+    Rules:
+    1. Answer in English.
+    2. Use exactly these headings, in this order: ## Grading, ## Dates, ## Quizzes, ## Exams, ## What comes up most, ## The professor's notation and habits, ## How to prepare.
+    3. Under each heading, 2 to 5 short bullets. After each fact, say where it is, like (Course outline.pdf p.2).
+    4. Only what the files show. If the files say nothing for a heading, write the one bullet "Not in the files yet."
+    5. "What comes up most" and "How to prepare" come from the quizzes, exams and exam prep: the kinds of questions, the topics that come back, the marks they carry.
+    6. Write maths in LaTeX: $...$.
+    7. No greeting, no introduction and no closing remarks.
+    """
+
+    /// What is sent to write a course's profile: its files by kind and the text of their first pages.
+    static func profileRequest(course: String, kinds: [(kind: MaterialKind, names: [String])], sources: String) -> String {
+        var parts = ["<course>\(course)</course>"]
+        if !kinds.isEmpty { parts.append("<course_files_by_kind>\n\(kindList(kinds))</course_files_by_kind>") }
+        parts.append("<course_file_text>\nThe first pages of each file, with a line `=== <file name>, page <n> ===` before every page.\n\n\(sources)</course_file_text>")
+        parts.append("<question>\nWrite this course's profile.\n</question>")
+        return parts.joined(separator: "\n\n")
+    }
+
     static func user(course: String, note: String, located: Located?, quote: String?, hasImage: Bool,
                      sourceApp: String, sourceTitle: String, history: [(q: String, a: String)], question: String,
                      files: CourseFiles? = nil, kinds: [(kind: MaterialKind, names: [String])] = [],
-                     memory: [String] = []) -> String {
+                     memory: [String] = [], profile: String = "") -> String {
         var parts: [String] = []
         if !course.isEmpty, course != AppConfig.generalCourse {
             parts.append("<course>\(course)</course>")
@@ -92,6 +116,11 @@ enum Prompts {
         let trimmedNote = note.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmedNote.isEmpty {
             parts.append("<course_notes>\n\(trimmedNote)\n</course_notes>")
+        }
+        let trimmedProfile = profile.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedProfile.isEmpty {
+            // How this course is taught and tested, from its outline, quizzes and exams.
+            parts.append("<course_profile>\nHow this course is graded and tested, written from its own files. Use it when it helps to say how a topic is tested.\n\(trimmedProfile)\n</course_profile>")
         }
         if !memory.isEmpty {
             // Shared by every question in the course, like a project's memory.

@@ -317,6 +317,10 @@ enum UITest {
         check("graph: what it uses and what uses it", graph.uses(node.id).map(\.key) == ["Definition 4.1", "Definition 4.2"]
               && graph.usedBy(node.id).map(\.key) == ["Example 4.4"])
 
+        _ = await click("Course tab Profile", in: w)
+        _ = await wait(3) { TestTags.frames["Write the profile"] != nil }
+        check("graph: the Profile tab offers to write the course's profile (not pressed: it would send a question)",
+              state?.tab == .profile && state?.profile.isEmpty == true && TestTags.frames["Write the profile"] != nil)
         _ = await click("Course tab Files", in: w)
         check("graph: the Files tab lists the course's files", state?.tab == .files)
         w.close()
