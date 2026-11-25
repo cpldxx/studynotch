@@ -294,6 +294,28 @@ enum DevTools {
             check("api stream: refusal reported", false)
         }
 
+        // Reading a tool's output: shell scripts stand in for the AI tools.
+        func readAll(_ script: String, grace: Double) -> (lines: [String], seconds: Double) {
+            let p = Process()
+            p.executableURL = URL(fileURLWithPath: "/bin/sh")
+            p.arguments = ["-c", script]
+            p.standardInput = FileHandle.nullDevice
+            let out = Pipe(), err = Pipe()
+            p.standardOutput = out
+            p.standardError = err
+            var lines: [String] = []
+            let ended = DispatchSemaphore(value: 0)
+            let start = Date()
+            AIEngine.readOutput(of: p, stdout: out, stderr: err, grace: grace,
+                                onLine: { lines.append($0) }, onExit: { _, _ in ended.signal() })
+            guard (try? p.run()) != nil, ended.wait(timeout: .now() + 10) == .success else { return ([], 99) }
+            return (lines, Date().timeIntervalSince(start))
+        }
+        let late = readAll("(sleep 0.3; echo late) & echo early", grace: 2)
+        check("ai output: lines written after the tool exits still arrive", late.lines == ["early", "late"] && late.seconds < 1.5)
+        let held = readAll("(sleep 2) & echo early", grace: 0.3)
+        check("ai output: a helper holding the output open doesn't keep it waiting", held.lines == ["early"] && held.seconds < 1.5)
+
         // Courses instead of presets
         check("a new install has no sample courses, only General", AppConfig.default.courses == [AppConfig.generalCourse])
         var listed = AppConfig.default

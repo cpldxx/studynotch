@@ -785,6 +785,62 @@ final class AIEngine {
 
     // MARK: - Running the tools
 
+    /// Reads a tool's output line by line, set up before it runs. It ends once the tool has exited
+    /// and both outputs have reached their end, so the last lines written just before the exit (the
+    /// end of an answer, or why it failed) are never dropped. A helper the tool left running can
+    /// hold the outputs open; then it ends `grace` seconds after the exit.
+    static func readOutput(of p: Process, stdout: Pipe, stderr: Pipe, grace: Double = 2,
+                           onLine: @escaping (String) -> Void, onExit: @escaping (Int32, String) -> Void) {
+        // Everything below runs on `queue`, one thing at a time.
+        let queue = DispatchQueue(label: "studynotch.ai.read")
+        var buffer = Data()
+        var errors = Data()
+        var outputOpen = true, errorsOpen = true
+        var status: Int32?
+        var ended = false
+        func end(force: Bool) {
+            guard !ended, let status, force || (!outputOpen && !errorsOpen) else { return }
+            ended = true
+            stdout.fileHandleForReading.readabilityHandler = nil
+            stderr.fileHandleForReading.readabilityHandler = nil
+            if let rest = String(data: buffer, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines), !rest.isEmpty {
+                onLine(rest)
+            }
+            onExit(status, lastLine(errors))
+        }
+        stdout.fileHandleForReading.readabilityHandler = { handle in
+            let chunk = handle.availableData
+            guard !chunk.isEmpty else {
+                handle.readabilityHandler = nil
+                queue.async { outputOpen = false; end(force: false) }
+                return
+            }
+            queue.async {
+                guard !ended else { return }
+                buffer.append(chunk)
+                while let newline = buffer.firstIndex(of: 0x0A) {
+                    let lineData = buffer.subdata(in: buffer.startIndex..<newline)
+                    buffer.removeSubrange(buffer.startIndex...newline)
+                    if let line = String(data: lineData, encoding: .utf8), !line.isEmpty { onLine(line) }
+                }
+            }
+        }
+        stderr.fileHandleForReading.readabilityHandler = { handle in
+            let chunk = handle.availableData
+            guard !chunk.isEmpty else {
+                handle.readabilityHandler = nil
+                queue.async { errorsOpen = false; end(force: false) }
+                return
+            }
+            queue.async { errors.append(chunk) }
+        }
+        p.terminationHandler = { finished in
+            let code = finished.terminationStatus
+            queue.async { status = code; end(force: false) }
+            queue.asyncAfter(deadline: .now() + grace) { end(force: true) }
+        }
+    }
+
     private func launch(path: String, arguments: [String], input: String,
                         onLine: @escaping (String) -> Void, onExit: @escaping (Int32, String) -> Void) {
         Paths.ensure()
@@ -802,37 +858,7 @@ final class AIEngine {
         p.standardInput = stdin
         p.standardOutput = stdout
         p.standardError = stderr
-
-        var buffer = Data()
-        var errors = Data()
-        let queue = DispatchQueue(label: "studynotch.ai.read")
-        stdout.fileHandleForReading.readabilityHandler = { handle in
-            let chunk = handle.availableData
-            guard !chunk.isEmpty else { return }
-            queue.async {
-                buffer.append(chunk)
-                while let newline = buffer.firstIndex(of: 0x0A) {
-                    let lineData = buffer.subdata(in: buffer.startIndex..<newline)
-                    buffer.removeSubrange(buffer.startIndex...newline)
-                    if let line = String(data: lineData, encoding: .utf8), !line.isEmpty { onLine(line) }
-                }
-            }
-        }
-        stderr.fileHandleForReading.readabilityHandler = { handle in
-            let chunk = handle.availableData
-            guard !chunk.isEmpty else { return }
-            queue.async { errors.append(chunk) }
-        }
-        p.terminationHandler = { finished in
-            stdout.fileHandleForReading.readabilityHandler = nil
-            stderr.fileHandleForReading.readabilityHandler = nil
-            queue.async {
-                if let rest = String(data: buffer, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines), !rest.isEmpty {
-                    onLine(rest)
-                }
-                onExit(finished.terminationStatus, Self.lastLine(errors))
-            }
-        }
+        Self.readOutput(of: p, stdout: stdout, stderr: stderr, onLine: onLine, onExit: onExit)
         do {
             try p.run()
         } catch {
