@@ -19,6 +19,95 @@ struct CourseFiles: Equatable {
     var folders: [String] { [text, pdfs] }
 }
 
+/// What a course's PDF is (the user's request, 2026-11-25: the app sorts a course's files by
+/// itself). The course's own copies live in a folder of this name inside `materials`; PDFs in
+/// linked folders stay where they are and are only grouped by it.
+enum MaterialKind: String, CaseIterable, Codable {
+    case outline = "Course outline"
+    case lectureNotes = "Lecture notes"
+    case courseNotes = "Course notes"
+    case assignments = "Assignments"
+    case quizzes = "Quizzes"
+    case exams = "Exams"
+    case examPrep = "Exam prep"
+    case other = "Other"
+
+    /// Pure: the words of a file name or a page, lowercased, with letters and digits apart
+    /// ("Quiz3_sol.pdf" → quiz, 3, sol, pdf).
+    static func words(_ text: String) -> [String] {
+        var out: [String] = []
+        var word = ""
+        var digits = false
+        for ch in text.lowercased() {
+            let isLetter = ch.isLetter, isDigit = ch.isNumber
+            guard isLetter || isDigit else {
+                if !word.isEmpty { out.append(word) }
+                word = ""
+                continue
+            }
+            if !word.isEmpty, digits != isDigit {
+                out.append(word)
+                word = ""
+            }
+            word.append(ch)
+            digits = isDigit
+        }
+        if !word.isEmpty { out.append(word) }
+        return out
+    }
+
+    /// Pure: a PDF's kind from its file name, else the name of the folder it is in (a linked
+    /// "Quizzes" folder), else the top of its first page.
+    static func of(name: String, folder: String = "", firstPage: String = "") -> MaterialKind {
+        let stem = (name as NSString).deletingPathExtension
+        return fromName(words(stem)) ?? fromName(words(folder)) ?? fromPage(words(String(firstPage.prefix(300)))) ?? .other
+    }
+
+    /// A word is one of these, or one of them with -s or -es ("quizzes" is listed itself).
+    /// Whole words only, so "examples" is not an exam and "testing" not a test.
+    private static func has(_ words: [String], _ stems: [String]) -> Bool {
+        words.contains { word in stems.contains { word == $0 || word == $0 + "s" || word == $0 + "es" } }
+    }
+
+    /// One of these words followed by a number ("a 2", "ch 4", "quiz 3").
+    private static func numbered(_ words: [String], _ heads: [String]) -> Bool {
+        zip(words, words.dropFirst()).contains { heads.contains($0) && $1.first?.isNumber == true }
+    }
+
+    private static let examWords = ["midterm", "final", "exam", "examination", "test", "mt"]
+    private static let quizWords = ["quiz", "quizzes"]
+
+    private static func fromName(_ w: [String]) -> MaterialKind? {
+        if has(w, ["outline", "syllabus"]) { return .outline }
+        // Practice material, and reviews or sheets made for a test, before the tests themselves.
+        // "Sample" and "formula" alone are statistics and calculus words, not a test's.
+        if has(w, ["practice", "mock", "prep", "preparation"])
+            || (has(w, ["sheet"]) && has(w, ["formula", "cheat", "aid", "crib"]))
+            || (has(w, ["review", "sample", "aid", "guide"]) && has(w, examWords + quizWords)) { return .examPrep }
+        if has(w, examWords) { return .exams }
+        if has(w, quizWords) { return .quizzes }
+        if has(w, ["assignment", "homework", "hw", "pset"]) || numbered(w, ["a"])
+            || zip(w, w.dropFirst()).contains(where: { $0 == "problem" && ($1 == "set" || $1 == "sets") }) { return .assignments }
+        if has(w, ["lecture", "lec", "slide", "week"]) { return .lectureNotes }
+        if has(w, ["note", "chapter", "textbook", "book", "handout", "module"]) || numbered(w, ["ch"]) { return .courseNotes }
+        return nil
+    }
+
+    /// The top of a page is a weaker sign than a name: it needs a test's title words, or a number
+    /// where a title has one ("Quiz 3"), so "a test statistic" or "before the midterm" isn't read
+    /// as a test.
+    private static func fromPage(_ w: [String]) -> MaterialKind? {
+        let text = " " + w.joined(separator: " ") + " "
+        if text.contains(" course outline ") || text.contains(" syllabus ") { return .outline }
+        if text.contains(" practice ") && (has(w, examWords) || numbered(w, quizWords)) { return .examPrep }
+        if text.contains(" midterm exam") || text.contains(" final exam") || numbered(w, ["test", "exam", "midterm"]) { return .exams }
+        if numbered(w, quizWords) { return .quizzes }
+        if numbered(w, ["assignment", "homework"]) { return .assignments }
+        if numbered(w, ["lecture"]) { return .lectureNotes }
+        return nil
+    }
+}
+
 /// A PDF or a linked folder shown in a course's list.
 struct CourseItem: Identifiable, Equatable {
     enum Kind { case folder, pdf }
@@ -26,10 +115,12 @@ struct CourseItem: Identifiable, Equatable {
     var kind: Kind
     /// For a folder: how many PDFs are in it; nil when the folder can't be found.
     var count: Int?
+    /// For one of the course's own PDFs: what it is (the folder it sits in).
+    var group: MaterialKind?
     var id: String { url.path }
 }
 
-/// A course is a folder: ~/StudyNotch/Courses/<course>/{course.md, materials/, log/, cards.md}.
+/// A course is a folder: ~/StudyNotch/Courses/<course>/{course.md, materials/<kind>/, log/, cards.md}.
 /// It can also be linked to folders elsewhere on the Mac; their PDFs are read where they are.
 final class CourseStore {
     static let shared = CourseStore()
@@ -83,12 +174,88 @@ final class CourseStore {
         return String(text.prefix(4000))
     }
 
-    /// The PDFs copied into the course's own folder.
+    /// The PDFs copied into the course's own folder: sorted ones in its kind folders, and any
+    /// not sorted yet at the top.
     func ownMaterials(_ course: String) -> [URL] {
         let folder = path(course).appendingPathComponent("materials", isDirectory: true)
-        let items = (try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil)) ?? []
-        return items.filter { $0.pathExtension.lowercased() == "pdf" }
-            .sorted { $0.lastPathComponent < $1.lastPathComponent }
+        let fm = FileManager.default
+        var out: [URL] = []
+        for item in (try? fm.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil, options: .skipsHiddenFiles)) ?? [] {
+            if item.pathExtension.lowercased() == "pdf" {
+                out.append(item)
+            } else if Self.isFolder(item), item.lastPathComponent != "_text" {
+                let inside = (try? fm.contentsOfDirectory(at: item, includingPropertiesForKeys: nil, options: .skipsHiddenFiles)) ?? []
+                out += inside.filter { $0.pathExtension.lowercased() == "pdf" }
+            }
+        }
+        return out.sorted { $0.lastPathComponent < $1.lastPathComponent }
+    }
+
+    // MARK: - Sorting a course's files by kind
+
+    /// What a course's PDF is: for its own copies, the kind folder it sits in; otherwise read
+    /// from its name and first page.
+    func kind(of pdf: URL) -> MaterialKind {
+        if let sorted = MaterialKind(rawValue: pdf.deletingLastPathComponent().lastPathComponent),
+           pdf.standardizedFileURL.path.hasPrefix(Paths.courses.standardizedFileURL.path + "/") {
+            return sorted
+        }
+        return MaterialKind.of(name: pdf.lastPathComponent, folder: pdf.deletingLastPathComponent().lastPathComponent,
+                               firstPage: index(pdf)?.pages.first ?? "")
+    }
+
+    /// Pure: a free file name in `folder` ("Quiz 1 (2).pdf" when "Quiz 1.pdf" is taken).
+    static func freeName(_ name: String, in folder: URL) -> URL {
+        let base = (name as NSString).deletingPathExtension, ext = (name as NSString).pathExtension
+        var target = folder.appendingPathComponent(name)
+        var n = 2
+        while FileManager.default.fileExists(atPath: target.path) {
+            target = folder.appendingPathComponent("\(base) (\(n)).\(ext)")
+            n += 1
+        }
+        return target
+    }
+
+    /// Moves one of the course's own PDFs into the folder for `kind`, with its read text.
+    /// Returns where it is now, or nil when it isn't one of the course's own PDFs.
+    @discardableResult
+    func move(_ pdf: URL, to kind: MaterialKind, course: String) -> URL? {
+        let own = path(course).appendingPathComponent("materials", isDirectory: true)
+        guard pdf.standardizedFileURL.path.hasPrefix(own.standardizedFileURL.path + "/") else { return nil }
+        let folder = own.appendingPathComponent(kind.rawValue, isDirectory: true)
+        if pdf.deletingLastPathComponent().standardizedFileURL.path == folder.standardizedFileURL.path { return pdf }
+        let fm = FileManager.default
+        try? fm.createDirectory(at: folder, withIntermediateDirectories: true)
+        let target = Self.freeName(pdf.lastPathComponent, in: folder)
+        let oldText = Self.textCache(for: pdf, courses: Paths.courses, cache: Paths.textCache)
+        guard (try? fm.moveItem(at: pdf, to: target)) != nil else { return nil }
+        let newText = Self.textCache(for: target, courses: Paths.courses, cache: Paths.textCache)
+        try? fm.createDirectory(at: newText.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try? fm.moveItem(at: oldText, to: newText)
+        lock.lock()
+        cache[pdf.path] = nil
+        lock.unlock()
+        return target
+    }
+
+    /// Puts the course's own PDFs that aren't in a kind folder yet into one. Nothing happens to
+    /// linked folders. Returns how many moved.
+    @discardableResult
+    func sortOwn(_ course: String) -> Int {
+        let own = path(course).appendingPathComponent("materials", isDirectory: true)
+        let loose = ((try? FileManager.default.contentsOfDirectory(at: own, includingPropertiesForKeys: nil)) ?? [])
+            .filter { $0.pathExtension.lowercased() == "pdf" }
+        return loose.filter { move($0, to: kind(of: $0), course: course) != nil }.count
+    }
+
+    /// Every PDF of the course grouped by kind, in the kinds' order. Linked folders are only read.
+    func byKind(_ course: String, folders: [String] = []) -> [(kind: MaterialKind, pdfs: [URL])] {
+        let all = materials(course, folders: folders)
+        var groups: [MaterialKind: [URL]] = [:]
+        for pdf in all { groups[kind(of: pdf), default: []].append(pdf) }
+        return MaterialKind.allCases.compactMap { kind in
+            groups[kind].map { (kind, $0.sorted { $0.lastPathComponent < $1.lastPathComponent }) }
+        }
     }
 
     /// Every PDF of the course: its own, then the ones in its linked folders.
@@ -121,9 +288,18 @@ final class CourseStore {
         return out.sorted { $0.path < $1.path }
     }
 
-    /// What a course's list shows: its linked folders first, then its own PDFs.
+    /// What a course's list shows: its linked folders first, then its own PDFs by kind.
     func items(_ course: String, folders: [String]) -> [CourseItem] {
-        Self.items(folders.map { URL(fileURLWithPath: $0) } + ownMaterials(course))
+        let own = ownMaterials(course).map { (pdf: $0, kind: kind(of: $0)) }
+            .sorted { a, b in
+                let ia = MaterialKind.allCases.firstIndex(of: a.kind)!, ib = MaterialKind.allCases.firstIndex(of: b.kind)!
+                return ia != ib ? ia < ib : a.pdf.lastPathComponent < b.pdf.lastPathComponent
+            }
+        var list = Self.items(folders.map { URL(fileURLWithPath: $0) } + own.map(\.pdf))
+        for i in list.indices where list[i].kind == .pdf {
+            list[i].group = own.first { $0.pdf == list[i].url }?.kind
+        }
+        return list
     }
 
     /// Folders with their PDF counts (nil when missing), and PDFs, in the order given.
@@ -198,6 +374,7 @@ final class CourseStore {
     /// the course's project folder up to date. It runs in the background, so the course may have
     /// been renamed or removed by the time it starts: it never makes the course's folder.
     func warm(_ course: String, folders: [String] = []) {
+        sortOwn(course)
         syncText(course, folders: folders, make: false)
     }
 
@@ -300,14 +477,19 @@ final class CourseStore {
         return Located(file: hit.file.lastPathComponent, page: hit.page + 1, context: context)
     }
 
+    /// Copies a PDF into the course, straight into the folder for its kind.
     @discardableResult
     func addMaterial(_ source: URL, course: String) -> Bool {
         guard source.pathExtension.lowercased() == "pdf" else { return false }
-        let target = dir(course).appendingPathComponent("materials", isDirectory: true)
-            .appendingPathComponent(source.lastPathComponent)
-        if FileManager.default.fileExists(atPath: target.path) { return true }
+        if ownMaterials(course).contains(where: { $0.lastPathComponent == source.lastPathComponent }) { return true }
+        let firstPage = MaterialKind.of(name: source.lastPathComponent) == .other
+            ? (PDFDocument(url: source)?.page(at: 0)?.string ?? "") : ""
+        let kind = MaterialKind.of(name: source.lastPathComponent, firstPage: firstPage)
+        let folder = dir(course).appendingPathComponent("materials", isDirectory: true)
+            .appendingPathComponent(kind.rawValue, isDirectory: true)
         do {
-            try FileManager.default.copyItem(at: source, to: target)
+            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            try FileManager.default.copyItem(at: source, to: folder.appendingPathComponent(source.lastPathComponent))
             return true
         } catch {
             return false

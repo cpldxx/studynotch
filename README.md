@@ -69,6 +69,7 @@ Then select some text anywhere, right-click, and press **Ask StudyNotch** above 
 
 - **Link folder** links a folder you already keep. Its PDFs are read where they are; nothing is copied, and the folder is never written to.
 - **Add PDFs** copies single PDFs into the course. Or drop PDFs or a folder onto the island.
+- **StudyNotch sorts the files by itself**: course outline, lecture notes, course notes, assignments, quizzes, exams, exam prep, or other, from each file’s name, its folder’s name or the top of its first page. Copied PDFs move into a folder of that name; files in a linked folder stay where they are and are only grouped. Click a file’s kind on the Edit page to put it under another.
 - What you pick for a new course only waits in the list. **Add** makes the course; close the tab without it and nothing is kept.
 - **Edit** on a course’s card changes it later: link or unlink folders, add or remove PDFs, rename it, or remove it. Removed things go to the Trash.
 

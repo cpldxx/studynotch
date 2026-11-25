@@ -473,6 +473,9 @@ enum DevTools {
               && CourseStore.shared.ownMaterials("Linear Algebra").map(\.lastPathComponent) == ["Formula sheet.pdf"]
               && CourseStore.shared.materials("Linear Algebra", folders: made).count == 4
               && adding.mode == .home && adding.staged.isEmpty && ConfigStore.load().folders(for: "Linear Algebra") == made)
+        check("new course: a copied PDF goes straight into the folder for its kind",
+              FileManager.default.fileExists(atPath: CourseStore.shared.path("Linear Algebra")
+                .appendingPathComponent("materials/Exam prep/Formula sheet.pdf").path))
         check("new course: a name already used keeps what was picked", {
             adding.openNewCourse(); adding.stage([loose]); adding.newCourseName = "linear algebra"; adding.addCourse()
             return adding.mode == .add && adding.staged.count == 1 && adding.config.courses.count == 2
@@ -494,6 +497,48 @@ enum DevTools {
               trashed == ["Formula sheet.pdf"] && CourseStore.shared.ownMaterials("Linear Algebra").isEmpty
               && !CourseStore.shared.trashMaterial(shelf.appendingPathComponent("notes.pdf"), course: "Linear Algebra")
               && FileManager.default.fileExists(atPath: shelf.appendingPathComponent("notes.pdf").path))
+
+        // Sorting a course's files by kind (the user's request, 2026-11-25)
+        let named: [(String, MaterialKind)] = [
+            ("Lecture 9.pdf", .lectureNotes), ("MATH237_Lec03_slides.pdf", .lectureNotes), ("Week 5.pdf", .lectureNotes),
+            ("Course notes (Wolczuk).pdf", .courseNotes), ("Chapter 4.pdf", .courseNotes), ("ch2.pdf", .courseNotes),
+            ("Quiz 3.pdf", .quizzes), ("quiz3_solutions.pdf", .quizzes), ("Quizzes F25.pdf", .quizzes),
+            ("Midterm 2024.pdf", .exams), ("Final Exam Solutions.pdf", .exams), ("MT1.pdf", .exams), ("Test 2.pdf", .exams),
+            ("Practice Midterm.pdf", .examPrep), ("Midterm review.pdf", .examPrep), ("Formula sheet.pdf", .examPrep),
+            ("Sample final.pdf", .examPrep), ("Assignment 3.pdf", .assignments), ("A2.pdf", .assignments),
+            ("HW5 solutions.pdf", .assignments), ("Problem Set 1.pdf", .assignments),
+            ("Course Outline F25.pdf", .outline), ("syllabus.pdf", .outline),
+            ("Examples of limits.pdf", .other), ("Hypothesis testing.pdf", .other), ("Sampling distributions.pdf", .other),
+            ("Taylor formula.pdf", .other),
+        ]
+        let misread = named.filter { MaterialKind.of(name: $0.0) != $0.1 }.map(\.0)
+        check("sorting: a file's kind from its name (examples aren't exams, testing isn't a test)\(misread.isEmpty ? "" : ": \(misread)")",
+              misread.isEmpty)
+        check("sorting: with no sign in the name, a linked file's folder decides, then the top of its first page",
+              MaterialKind.of(name: "Q1.pdf", folder: "Quizzes") == .quizzes
+              && MaterialKind.of(name: "scan 0412.pdf", firstPage: "MATH 237 Fall 2025\nMidterm Examination\nName:") == .exams
+              && MaterialKind.of(name: "scan 0413.pdf", firstPage: "We use a test statistic before the midterm.") == .other
+              && MaterialKind.of(name: "scan 0414.pdf", firstPage: "Lecture 12: The chain rule") == .lectureNotes)
+        let sortOwn = CourseStore.shared.dir("SORT 1").appendingPathComponent("materials")
+        makePDF(at: sortOwn.appendingPathComponent("Quiz 1.pdf"), pages: ["Quiz 1. Find the limit."])
+        makePDF(at: sortOwn.appendingPathComponent("scan.pdf"), pages: ["Assignment 2\nDue Friday."])
+        let movedCount = CourseStore.shared.sortOwn("SORT 1")
+        let sortedQuiz = sortOwn.appendingPathComponent("Quizzes/Quiz 1.pdf")
+        check("sorting: copies that aren't sorted yet move into their kind's folder, with their read text",
+              movedCount == 2 && FileManager.default.fileExists(atPath: sortedQuiz.path)
+              && FileManager.default.fileExists(atPath: sortOwn.appendingPathComponent("Assignments/scan.pdf").path)
+              && FileManager.default.fileExists(atPath: sortOwn.appendingPathComponent("Quizzes/_text/Quiz 1.pdf.json").path)
+              && !FileManager.default.fileExists(atPath: sortOwn.appendingPathComponent("Quiz 1.pdf").path)
+              && CourseStore.shared.sortOwn("SORT 1") == 0)
+        let byHand = CourseStore.shared.move(sortedQuiz, to: .examPrep, course: "SORT 1")
+        check("sorting: a copy put under another kind by hand moves there; a PDF in a linked folder never moves",
+              byHand?.path == sortOwn.appendingPathComponent("Exam prep/Quiz 1.pdf").path
+              && byHand.map { CourseStore.shared.kind(of: $0) } == .examPrep
+              && CourseStore.shared.move(shelf.appendingPathComponent("notes.pdf"), to: .exams, course: "SORT 1") == nil
+              && FileManager.default.fileExists(atPath: shelf.appendingPathComponent("notes.pdf").path))
+        check("sorting: the course's list shows each copy with its kind, in the kinds' order",
+              CourseStore.shared.items("SORT 1", folders: []).map(\.group) == [.assignments, .examPrep]
+              && CourseStore.shared.byKind("SORT 1").map(\.kind) == [.assignments, .examPrep])
         SessionLog.append(SessionRecord(course: "Linear Algebra", task: "", start: Date(), end: Date(), plannedMinutes: 50,
                                         focusSeconds: 60, distractSeconds: 0, questions: ["Why?"]))
         adding.editName = "MATH 136"
@@ -1087,9 +1132,9 @@ enum DevTools {
                 m.editingCourse = "MATH 237"
                 m.editName = "MATH 237"
                 m.courseItems = [CourseItem(url: URL(fileURLWithPath: "/Users/student/Documents/MATH 237"), kind: .folder, count: 12),
-                                 CourseItem(url: URL(fileURLWithPath: "/c/Lecture 9.pdf"), kind: .pdf, count: nil),
-                                 CourseItem(url: URL(fileURLWithPath: "/c/Assignment 3.pdf"), kind: .pdf, count: nil),
-                                 CourseItem(url: URL(fileURLWithPath: "/c/Course notes (Wolczuk).pdf"), kind: .pdf, count: nil)]
+                                 CourseItem(url: URL(fileURLWithPath: "/c/Lecture 9.pdf"), kind: .pdf, count: nil, group: .lectureNotes),
+                                 CourseItem(url: URL(fileURLWithPath: "/c/Course notes (Wolczuk).pdf"), kind: .pdf, count: nil, group: .courseNotes),
+                                 CourseItem(url: URL(fileURLWithPath: "/c/Assignment 3.pdf"), kind: .pdf, count: nil, group: .assignments)]
                 m.mode = .add
             }),
             ("09f-edit-remove", { m in
@@ -1097,7 +1142,7 @@ enum DevTools {
                 m.editingCourse = "MATH 237"
                 m.editName = "MATH 237"
                 m.removingCourse = true
-                m.courseItems = [CourseItem(url: URL(fileURLWithPath: "/c/Lecture 9.pdf"), kind: .pdf, count: nil)]
+                m.courseItems = [CourseItem(url: URL(fileURLWithPath: "/c/Lecture 9.pdf"), kind: .pdf, count: nil, group: .lectureNotes)]
                 m.mode = .add
             }),
             ("09c-greeting", { m in m.mode = .greeting }),

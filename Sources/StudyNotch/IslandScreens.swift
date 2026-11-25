@@ -1096,7 +1096,8 @@ struct CourseFilesCard: View {
             VStack(spacing: 2) {
                 ForEach(items) { item in
                     CourseItemRow(item: item, picked: model.editingCourse == nil,
-                                  reveal: { model.reveal(item) }, remove: { model.remove(item) })
+                                  reveal: { model.reveal(item) }, remove: { model.remove(item) },
+                                  move: { model.move(item, to: $0) })
                 }
             }
             .padding(.vertical, 2)
@@ -1113,6 +1114,8 @@ struct CourseItemRow: View {
     let picked: Bool
     let reveal: () -> Void
     let remove: () -> Void
+    /// A copied PDF can be put under another kind.
+    var move: (MaterialKind) -> Void = { _ in }
     @State private var hovered = false
 
     var body: some View {
@@ -1126,7 +1129,22 @@ struct CourseItemRow: View {
                 .lineLimit(1)
                 .truncationMode(.middle)
             Spacer(minLength: 4)
-            Text(Self.detail(item)).font(.system(size: 11)).foregroundColor(Ink.faint).lineLimit(1)
+            if let group = item.group {
+                Menu {
+                    ForEach(MaterialKind.allCases, id: \.self) { kind in
+                        Button(kind.rawValue) { move(kind) }.disabled(kind == group)
+                    }
+                } label: {
+                    Text(group.rawValue).font(.system(size: 11)).foregroundColor(hovered ? Ink.icon : Ink.faint).lineLimit(1)
+                }
+                .menuStyle(.borderlessButton)
+                .menuIndicator(.hidden)
+                .fixedSize()
+                .help("Sorted as \(group.rawValue). Click to put it under another kind.")
+                .accessibilityLabel("\(item.url.lastPathComponent) is sorted as \(group.rawValue)")
+            } else {
+                Text(Self.detail(item)).font(.system(size: 11)).foregroundColor(Ink.faint).lineLimit(1)
+            }
             Button(action: remove) {
                 Image(systemName: "xmark")
                     .font(.system(size: 7.5, weight: .bold))

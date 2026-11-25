@@ -74,7 +74,7 @@ Signing in to Cloudflare (`npx wrangler@4 login`) is done by the owner of the ac
 ├── .cache/text/         the read text of PDFs in linked folders
 └── Courses/<course>/
     ├── course.md        course notes, sent in front of every question
-    ├── materials/       PDFs copied into the course
+    ├── materials/       PDFs copied into the course, one folder per kind (Lecture notes, Quizzes, Exams, …)
     ├── text/            every PDF of the course as text, page by page: what the AI may open
     ├── cards.md         review cards
     └── log/             questions and answers by date

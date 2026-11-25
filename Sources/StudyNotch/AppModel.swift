@@ -861,6 +861,18 @@ final class AppModel: ObservableObject {
         refreshItems()
     }
 
+    /// A copied PDF's kind, picked by hand: it moves into that kind's folder.
+    func move(_ item: CourseItem, to kind: MaterialKind) {
+        guard let course = editingCourse, item.kind == .pdf, item.group != kind else { return }
+        DispatchQueue.global(qos: .userInitiated).async {
+            let moved = CourseStore.shared.move(item.url, to: kind, course: course) != nil
+            DispatchQueue.main.async {
+                if moved { self.showNotice("Moved \(item.url.lastPathComponent) to \(kind.rawValue)") }
+                self.refreshItems()
+            }
+        }
+    }
+
     /// "Link folder" and "Add PDFs": the Mac's Open panel, then the same as a drop.
     func choose(folders: Bool) {
         guard !choosing, let onChoose else { return }
