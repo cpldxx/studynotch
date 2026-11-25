@@ -841,6 +841,16 @@ final class AIEngine {
         }
     }
 
+    /// Writes the question into a tool's input, then closes it. A tool that ends without reading
+    /// all of it (say, it refused an option) only makes the write fail, instead of the system
+    /// ending StudyNotch for writing into a closed pipe. A pipe holds about 64 KB, so only a long
+    /// question waits for the tool to read it.
+    static func send(_ input: String, to handle: FileHandle) {
+        _ = fcntl(handle.fileDescriptor, F_SETNOSIGPIPE, 1)
+        try? handle.write(contentsOf: Data(input.utf8))
+        try? handle.close()
+    }
+
     private func launch(path: String, arguments: [String], input: String,
                         onLine: @escaping (String) -> Void, onExit: @escaping (Int32, String) -> Void) {
         Paths.ensure()
@@ -866,10 +876,9 @@ final class AIEngine {
             return
         }
         process = p
-        if let data = input.data(using: .utf8) {
-            stdin.fileHandleForWriting.write(data)
-        }
-        try? stdin.fileHandleForWriting.close()
+        // Off the main thread: a long question waits in the pipe until the tool reads it.
+        let handle = stdin.fileHandleForWriting
+        DispatchQueue.global(qos: .userInitiated).async { Self.send(input, to: handle) }
         DispatchQueue.global().asyncAfter(deadline: .now() + 180) { [weak p] in
             if let p, p.isRunning { p.terminate() }
         }

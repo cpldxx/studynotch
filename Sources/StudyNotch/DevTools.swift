@@ -301,13 +301,13 @@ enum DevTools {
             check("api stream: refusal reported", false)
         }
 
-        // Reading a tool's output: shell scripts stand in for the AI tools.
-        func readAll(_ script: String, grace: Double) -> (lines: [String], seconds: Double) {
+        // Running a tool the way a question does: shell scripts stand in for the AI tools.
+        func readAll(_ script: String, input: String = "", grace: Double = 2) -> (lines: [String], seconds: Double) {
             let p = Process()
             p.executableURL = URL(fileURLWithPath: "/bin/sh")
             p.arguments = ["-c", script]
-            p.standardInput = FileHandle.nullDevice
-            let out = Pipe(), err = Pipe()
+            let stdin = Pipe(), out = Pipe(), err = Pipe()
+            p.standardInput = stdin
             p.standardOutput = out
             p.standardError = err
             var lines: [String] = []
@@ -315,13 +315,21 @@ enum DevTools {
             let start = Date()
             AIEngine.readOutput(of: p, stdout: out, stderr: err, grace: grace,
                                 onLine: { lines.append($0) }, onExit: { _, _ in ended.signal() })
-            guard (try? p.run()) != nil, ended.wait(timeout: .now() + 10) == .success else { return ([], 99) }
+            guard (try? p.run()) != nil else { return ([], 99) }
+            DispatchQueue.global().async { AIEngine.send(input, to: stdin.fileHandleForWriting) }
+            guard ended.wait(timeout: .now() + 10) == .success else { return ([], 99) }
             return (lines, Date().timeIntervalSince(start))
         }
-        let late = readAll("(sleep 0.3; echo late) & echo early", grace: 2)
+        let late = readAll("(sleep 0.3; echo late) & echo early")
         check("ai output: lines written after the tool exits still arrive", late.lines == ["early", "late"] && late.seconds < 1.5)
         let held = readAll("(sleep 2) & echo early", grace: 0.3)
         check("ai output: a helper holding the output open doesn't keep it waiting", held.lines == ["early"] && held.seconds < 1.5)
+        // A question longer than a pipe holds (about 200 KB).
+        let long = (0..<20_000).map { "line \($0)" }.joined(separator: "\n") + "\n"
+        let echoed = readAll("cat", input: long)
+        check("ai input: a long question reaches the tool whole", echoed.lines.count == 20_000 && echoed.lines.last == "line 19999")
+        check("ai input: a tool that quits without reading a long question doesn't end StudyNotch",
+              readAll("exit 1", input: long).seconds < 5)
 
         // Courses instead of presets
         check("a new install has no sample courses, only General", AppConfig.default.courses == [AppConfig.generalCourse])
