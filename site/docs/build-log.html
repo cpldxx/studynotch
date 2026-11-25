@@ -56,6 +56,7 @@
       <li><strong>Questions show up in the Claude app.</strong> A question asked with Claude used to vanish after its answer: the tool was told not to save it, so the Claude app had nothing to show. Now each one is kept as a Claude Code session in the course’s folder, named after the question, and handed to the Claude app with its own link, so it appears there under the course’s name. A follow-up continues the same session, and “Open in Claude” opens it there. Chat Projects still have no way in for another app.</li>
       <li><strong>A course sorts its own files.</strong> A course’s PDFs sat in one list, whatever they were. Now StudyNotch sorts them into course outline, lecture notes, course notes, assignments, quizzes, exams, exam prep and other, from the file’s name, its folder’s name or the title on its first page (“examples” is not an exam, and “hypothesis testing” is not a test). Copied PDFs move into a folder for their kind; files in linked folders are only grouped. A wrong guess is fixed by clicking the file’s kind.</li>
       <li><strong>A course works like a project.</strong> In the Claude app, chats in one project share its files and what came before. StudyNotch can’t reach those projects, so a course does the same itself: every question in it gets the course’s notes, its files by kind and its memory, a line for each earlier question. Tried for real: in a course whose memory held an earlier question about a made-up “KAPPA-31 condition”, Claude named that question and the quiz file that tests the topic.</li>
+      <li><strong>A course shows how it connects.</strong> Each course has a window with a graph of its notes: every numbered or named definition, theorem, lemma and example is a dot, and a line joins two when one names the other (“by Theorem 2.3”) or uses the term a definition defines. It is read from the PDFs on the Mac, with no AI. Clicking a dot shows what it uses, what uses it, and its own page. A reference that a PDF wraps onto a new line is not taken for a heading. Checked by clicking a dot in the real window: the picked theorem and its page 2 came up.</li>
     </ol>
 
     <h2 id="why">Decisions, and why</h2>
@@ -96,7 +97,9 @@
           <tr><td><code>SelectionWatcher.swift</code></td><td>Guesses whether text is selected, and reads it when you ask.</td></tr>
           <tr><td><code>ScreenshotWatcher.swift</code></td><td>Notices new screenshots; captures an area.</td></tr>
           <tr><td><code>FocusWatcher.swift</code></td><td>Reads the front app, window title and tab address; applies the drift rules.</td></tr>
-          <tr><td><code>Materials.swift</code></td><td>Course folders, extracting page text from PDFs, finding the page of a selected sentence.</td></tr>
+          <tr><td><code>Materials.swift</code></td><td>Course folders, sorting their files by kind, extracting page text from PDFs, finding the page of a selected sentence, a course’s memory.</td></tr>
+          <tr><td><code>CourseGraph.swift</code></td><td>Reads a course’s definitions, theorems and examples out of its notes, finds which use which, and lays them out.</td></tr>
+          <tr><td><code>CourseWindow.swift</code></td><td>The course window: the graph, a picked item’s page, and the files by kind.</td></tr>
           <tr><td><code>AIEngine.swift</code></td><td>Finds Claude Code inside the Claude app; Codex; the API key.</td></tr>
           <tr><td><code>ClaudeApp.swift</code></td><td>Hands questions kept as Claude Code sessions to the Claude app, with the app’s own link.</td></tr>
           <tr><td><code>Prompts.swift</code></td><td>The questions behind each button and the rules given to the AI.</td></tr>
@@ -130,7 +133,7 @@
     <h3>Checked</h3>
     <ul>
       <li>Building and signing.</li>
-      <li>170 self-tests: drift rules, finding pages in PDFs, sorting course files by kind, reading settings, parsing AI output, positioning the button and windows, island sizes and mascot positions, and study records.</li>
+      <li>176 self-tests: drift rules, finding pages in PDFs, sorting course files by kind, reading a course’s graph, reading settings, parsing AI output, positioning the button and windows, island sizes and mascot positions, and study records.</li>
       <li>Renders of every screen state.</li>
       <li>The app launching, with its window on the top row above the menu bar.</li>
       <li>Real answers through the Claude app’s sign-in. A text question took about 2 seconds to its first word, and text inside a screenshot was read too.</li>

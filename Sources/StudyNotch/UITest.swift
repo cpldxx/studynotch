@@ -10,7 +10,9 @@ import SwiftUI
 /// own sign-ins are not touched: everything is written under the throw-away folder, and sign-in
 /// windows are recorded instead of opened.
 enum UITest {
-    static var active: Bool { CommandLine.arguments.contains("--uitest") || coursesOnly || eyesOnly }
+    static var active: Bool { CommandLine.arguments.contains("--uitest") || coursesOnly || eyesOnly || graphOnly }
+    /// `--uitest-graph`: the course window, from the Graph button to a picked theorem's page.
+    static var graphOnly: Bool { CommandLine.arguments.contains("--uitest-graph") }
     /// `--uitest-eyes`: measures, in the real window, how far the mascot's eyes move with the pointer.
     /// The pointer's direction is set by the test, so the real pointer is left alone.
     static var eyesOnly: Bool { CommandLine.arguments.contains("--uitest-eyes") }
@@ -44,6 +46,8 @@ enum UITest {
         Task { @MainActor in
             if eyesOnly {
                 await driveEyes(model)
+            } else if graphOnly {
+                await driveGraph(model)
             } else {
                 if !coursesOnly { await drive(model) }
                 await driveCourses(model)
@@ -66,15 +70,21 @@ enum UITest {
         try? await Task.sleep(nanoseconds: UInt64(seconds * 1e9))
     }
 
-    /// A real mouse press and release in the island window, in the middle of the button with these words.
+    /// A real mouse press and release in the island window (or `target`), in the middle of the
+    /// button with these words.
     @MainActor
-    private static func click(_ name: String) async -> Bool {
-        guard let window, let content = window.contentView, let frame = TestTags.frames[name] else {
+    private static func click(_ name: String, in target: NSWindow? = nil) async -> Bool {
+        guard let window = target ?? window, let content = window.contentView, let frame = TestTags.frames[name] else {
             print("      no “\(name)” on screen; there is: \(TestTags.frames.keys.sorted().joined(separator: " | "))")
             return false
         }
         // SwiftUI measures from the top left of the window's content; AppKit from the bottom left.
-        let point = NSPoint(x: frame.midX, y: content.bounds.height - frame.midY)
+        return await press(NSPoint(x: frame.midX, y: content.bounds.height - frame.midY), in: window)
+    }
+
+    /// A real mouse press and release at a point of a window (AppKit's coordinates).
+    @MainActor
+    private static func press(_ point: NSPoint, in window: NSWindow) async -> Bool {
         for type in [NSEvent.EventType.leftMouseDown, .leftMouseUp] {
             guard let event = NSEvent.mouseEvent(with: type, location: point, modifierFlags: [],
                                                  timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: window.windowNumber,
@@ -248,6 +258,68 @@ enum UITest {
         check("edit: Remove takes the course away; the linked folder is untouched",
               model.config.courses == ["General"] && model.mode == .home && ConfigStore.load().courses == ["General"]
               && fm.fileExists(atPath: folder.appendingPathComponent("Lecture 2.pdf").path))
+    }
+
+    // MARK: - The course window
+
+    @MainActor
+    private static func driveGraph(_ model: AppModel) async {
+        let fm = FileManager.default
+        let course = "MATH 237"
+        let shelf = Paths.root.appendingPathComponent("Shelf/MATH 237", isDirectory: true)
+        try? fm.createDirectory(at: shelf, withIntermediateDirectories: true)
+        // A cover page first, so a theorem's page is page 2, not just the first.
+        for note in DevTools.sampleNotes() {
+            DevTools.makePDF(at: shelf.appendingPathComponent(note.file), pages: ["MATH 237 lecture notes"] + note.pages)
+        }
+        let quiz = Paths.root.appendingPathComponent("Shelf/Quiz 1.pdf")
+        DevTools.makePDF(at: quiz, pages: ["Quiz 1. Classify the critical points with the Second Derivative Test."])
+        if model.mode == .setup { model.closeSetup() }
+        await pause(0.6)
+        model.config.presets.append(Preset(id: course, course: course, task: "", minutes: 50))
+        _ = model.config.link(shelf.standardizedFileURL.path, to: course)
+        ConfigStore.save(model.config)
+        CourseStore.shared.addMaterial(quiz, course: course)
+        model.focusedCourse = course
+        model.openHome()
+        _ = await wait(4) { TestTags.frames["Course graph"] != nil }
+        _ = await click("Course graph")
+
+        var courseWindow: NSWindow? { NSApp.windows.first { $0.title == course && $0.isVisible } }
+        var state: CourseWindowState? { (courseWindow?.contentView as? NSHostingView<CourseWindowView>)?.rootView.state }
+        _ = await wait(15) { state?.graph != nil && state?.loading == false }
+        check("graph: the Graph button on the course's card opens its window", courseWindow != nil)
+        check("graph: the linked notes become dots and lines (\(state?.graph?.nodes.count ?? 0) dots, \(state?.graph?.edges.count ?? 0) lines)",
+              state?.graph?.nodes.count == 27 && state?.graph?.edges.count == 36)
+        check("graph: its files are grouped by kind", state?.files.map(\.kind) == [.lectureNotes, .quizzes])
+
+        guard let w = courseWindow, let content = w.contentView, let graph = state?.graph,
+              let node = graph.node("Lecture 7-8.pdf#Theorem 4.3") else {
+            check("graph: the Second Derivative Test is a dot", false)
+            return
+        }
+        await pause(0.5)
+        // Where the pane draws it: the graph fills the window left of the 340pt side pane, under the 52pt header.
+        let width = content.bounds.width - 340, height = content.bounds.height - 52
+        let x = 24 + node.x * (width - 48), y = 52 + 12 + node.y * (height - 64)
+        _ = await press(NSPoint(x: x, y: content.bounds.height - y), in: w)
+        check("graph: clicking a dot picks it", state?.selected == node.id)
+        _ = await wait(4) { PagePreview.lastShown == "\(node.path)#\(node.page)" }
+        check("graph: beside it, the theorem's own page (\(node.file) p.\(node.page))",
+              node.page == 2 && PagePreview.lastShown == "\(node.path)#\(node.page)")
+        // A picture of the real window, to look at.
+        if let rep = content.bitmapImageRepForCachingDisplay(in: content.bounds) {
+            content.cacheDisplay(in: content.bounds, to: rep)
+            let picture = FileManager.default.temporaryDirectory.appendingPathComponent("studynotch-uitest-graph.png")
+            try? rep.representation(using: .png, properties: [:])?.write(to: picture)
+            print("      window picture: \(picture.path)")
+        }
+        check("graph: what it uses and what uses it", graph.uses(node.id).map(\.key) == ["Definition 4.1", "Definition 4.2"]
+              && graph.usedBy(node.id).map(\.key) == ["Example 4.4"])
+
+        _ = await click("Course tab Files", in: w)
+        check("graph: the Files tab lists the course's files", state?.tab == .files)
+        w.close()
     }
 
     // MARK: - The eyes, measured in the real window

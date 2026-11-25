@@ -25,6 +25,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     let model = AppModel()
     private var island: IslandController?
     private var popup: AskPopupController?
+    private var courseWindow: CourseWindowController?
     private let rightClick = RightClickWatcher()
     private var statusItem: NSStatusItem?
 
@@ -39,6 +40,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         model.onAskAPIKey = { [weak self] in self?.askAPIKey() }
         model.onChoose = { [weak self] folders, done in self?.choose(folders: folders, done: done) }
+        courseWindow = CourseWindowController(model: model)
+        model.onOpenCourse = { [weak self] course in self?.courseWindow?.show(course) }
         model.start()
         island = IslandController(model: model)
         popup = AskPopupController(model: model)

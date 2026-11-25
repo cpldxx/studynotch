@@ -16,6 +16,7 @@ The build is signed with a Developer ID or Apple Development certificate when th
 |---|---|---|
 | `swift build && .build/debug/StudyNotch --selftest` | Pure logic: drift rules, finding pages in PDFs, settings, parsing each AI’s output, sign-in states, course folders, the mascot’s look | No |
 | `.build/debug/StudyNotch --uitest-courses` | Clicks through the Add tab in the real window: picking, Add, closing without Add, Edit, linking, renaming, removing | No |
+| `.build/debug/StudyNotch --uitest-graph` | Clicks the Graph button on a course's card in the real window, then a theorem in the course window: its page and its links come up | No |
 | `.build/debug/StudyNotch --uitest-eyes` | How far the mascot’s eyes move with the pointer, measured in the real window | No |
 | `.build/debug/StudyNotch --uitest` | The AI card and the Add tab in the real window, including one real question each to Claude and ChatGPT | Yes |
 | `.build/debug/StudyNotch --asktest [image]` | One real question, as the app sends it. `STUDYNOTCH_AI=codex-cli` picks ChatGPT | Yes |
@@ -56,6 +57,7 @@ Signing in to Cloudflare (`npx wrangler@4 login`) is done by the owner of the ac
 | `Sources/StudyNotch/RightClickWatcher.swift`, `SelectionWatcher.swift` | The button above the right-click menu, and reading the selected text |
 | `Sources/StudyNotch/ScreenshotWatcher.swift`, `FocusWatcher.swift` | New screenshots and captures; the front app, window and tab, and the drift rules |
 | `Sources/StudyNotch/Materials.swift` | Course folders, linked folders, reading PDFs, finding the page of a sentence, the text copies an AI may open |
+| `Sources/StudyNotch/CourseGraph.swift`, `CourseWindow.swift` | A course's graph: definitions, theorems and examples read from its notes and which use which; the window that shows it, a picked item's page and the files by kind |
 | `Sources/StudyNotch/ClaudeApp.swift` | Handing questions kept as Claude Code sessions to the Claude app with its own `claude://resume` link |
 | `Sources/StudyNotch/AIEngine.swift`, `Prompts.swift` | Claude, ChatGPT (Codex), Gemini (`agy`) and the API key; sign-in checks; what is sent and the rules given to the AI |
 | `Sources/StudyNotch/Config.swift`, `SessionLog.swift` | The settings file and session history |

@@ -529,7 +529,7 @@ struct CourseCard: View {
                     Spacer(minLength: 2)
                 }
                 .padding(.top, 11)
-                .padding(.trailing, 58)
+                .padding(.trailing, course == AppConfig.generalCourse ? 10 : (running == nil ? 88 : 58))
                 .help(stuckHelp(running))
 
                 HStack(spacing: 6) {
@@ -547,6 +547,11 @@ struct CourseCard: View {
             .padding(.leading, cardText)
 
             if course != AppConfig.generalCourse {
+                HStack(spacing: 4) {
+                // During a session the line beside the name needs the room: the graph sits by End.
+                if running == nil {
+                    graphButton(course, width: 26, height: 19, size: 9.5, shape: AnyShape(Capsule()), fill: 0.07)
+                }
                 Button { model.editCourse(course) } label: {
                     HStack(spacing: 3) {
                         Image(systemName: "folder").font(.system(size: 8.5, weight: .semibold))
@@ -562,12 +567,29 @@ struct CourseCard: View {
                 .testTag("Edit course")
                 .help("Folders and files for \(course)")
                 .accessibilityLabel("Folders and files for \(course)")
+                }
                 .padding(.top, 9)
                 .padding(.trailing, 10)
                 .frame(maxWidth: .infinity, alignment: .trailing)
             }
         }
         .frame(maxHeight: .infinity)
+    }
+
+    /// Opens the course window: how its notes connect, and its files by kind.
+    private func graphButton(_ course: String, width: CGFloat, height: CGFloat, size: CGFloat, shape: AnyShape, fill: Double) -> some View {
+        Button { model.openCourseWindow(course) } label: {
+            Image(systemName: "point.3.connected.trianglepath.dotted")
+                .font(.system(size: size, weight: .semibold))
+                .foregroundColor(Ink.icon)
+                .frame(width: width, height: height)
+                .background(shape.fill(Color.white.opacity(fill)))
+                .contentShape(shape)
+        }
+        .buttonStyle(Springy())
+        .testTag("Course graph")
+        .help("How \(course)’s definitions and theorems connect, and its files by kind")
+        .accessibilityLabel("Graph of \(course)")
     }
 
     /// The faint light under the card while its course runs: the state's colour.
@@ -627,6 +649,9 @@ struct CourseCard: View {
                     CardButton("\(model.config.breakMinutes)-min break", icon: "cup.and.saucer.fill") { model.startRest() }
                 }
                 CardButton("End", icon: "stop.fill") { model.endSession() }
+                if course != AppConfig.generalCourse {
+                    graphButton(course, width: 26, height: 26, size: 11, shape: AnyShape(Circle()), fill: 0.08)
+                }
             }
         } else if let other = model.session {
             Text("\(other.preset.course) session in progress")

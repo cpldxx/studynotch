@@ -192,6 +192,8 @@ final class AppModel: ObservableObject {
     var onAskAPIKey: (() -> Void)?
     /// Shows the Mac's Open panel for folders (true) or PDFs (false) and hands back what was picked.
     var onChoose: ((Bool, @escaping ([URL]) -> Void) -> Void)?
+    /// Opens the course window (its graph and files) for a course.
+    var onOpenCourse: ((String) -> Void)?
     /// Opens a sign-in or install script in Terminal. `--uitest` records it instead.
     var openInTerminal: (URL) -> Void = { NSWorkspace.shared.open($0) }
     let previewMode: Bool
@@ -709,6 +711,13 @@ final class AppModel: ObservableObject {
     /// Opens the course's own folder in Finder: its notes, log, cards and copied PDFs.
     func openCourseFolder(_ course: String) {
         NSWorkspace.shared.open(CourseStore.shared.dir(course))
+    }
+
+    /// "Graph" on a course's card: the course window, with how its notes connect.
+    func openCourseWindow(_ course: String) {
+        guard course != AppConfig.generalCourse, !previewMode else { return }
+        play(.blip)
+        onOpenCourse?(course)
     }
 
     /// Shows a linked folder or a copied PDF in Finder.

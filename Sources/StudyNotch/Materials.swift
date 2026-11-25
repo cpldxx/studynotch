@@ -370,6 +370,11 @@ final class CourseStore {
         return result
     }
 
+    /// A PDF's pages as text (read once, then kept).
+    func pages(of pdf: URL) -> [String] {
+        index(pdf)?.pages ?? []
+    }
+
     /// Reads every PDF of the course once so the first question does not wait for it, and brings
     /// the course's project folder up to date. It runs in the background, so the course may have
     /// been renamed or removed by the time it starts: it never makes the course's folder.

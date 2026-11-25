@@ -71,6 +71,10 @@ Then select some text anywhere, right-click, and press **Ask StudyNotch** above 
 - **Add PDFs** copies single PDFs into the course. Or drop PDFs or a folder onto the island.
 - **StudyNotch sorts the files by itself**: course outline, lecture notes, course notes, assignments, quizzes, exams, exam prep, or other, from each file’s name, its folder’s name or the top of its first page. Copied PDFs move into a folder of that name; files in a linked folder stay where they are and are only grouped. Click a file’s kind on the Edit page to put it under another.
 - **A course works like a project.** Every question in it gets the course’s notes, its files by kind and its memory: a line for each earlier question, kept in `memory.md` in the course’s folder. So an answer can say “you asked about this in Lecture 5” or point to the quiz that tests it. Delete a line there to have it forgotten.
+- **The graph icon** on a course’s card opens a window that shows how the course connects. Every numbered or named definition, theorem, lemma and example in its notes is a dot; a line joins two when one names the other (“by Theorem 2.3”) or uses the term a definition defines. Click a dot to see what it uses, what uses it, and its page. It is read from the PDFs on your Mac, with no AI.
+
+<p align="center"><img src="site/assets/img/app/15b-course-graph-picked.png" width="720" alt="The MATH 237 course window: a graph of dots and lines, with Theorem 4.3 (Second Derivative Test) picked. Beside it: it uses Definition 4.1 (Critical point) and Definition 4.2 (Hessian matrix), is used by Example 4.4, and its page from Lecture 7-8.pdf"></p>
+
 - What you pick for a new course only waits in the list. **Add** makes the course; close the tab without it and nothing is kept.
 - **Edit** on a course’s card changes it later: link or unlink folders, add or remove PDFs, rename it, or remove it. Removed things go to the Trash.
 

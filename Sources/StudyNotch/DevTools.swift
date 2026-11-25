@@ -18,7 +18,7 @@ enum DevTools {
         return home
     }
 
-    private static func makePDF(at url: URL, pages: [String]) {
+    static func makePDF(at url: URL, pages: [String]) {
         var box = CGRect(x: 0, y: 0, width: 612, height: 792)
         guard let context = CGContext(url as CFURL, mediaBox: &box, nil) else { return }
         for text in pages {
@@ -552,6 +552,38 @@ enum DevTools {
               && byHand.map { CourseStore.shared.kind(of: $0) } == .examPrep
               && CourseStore.shared.move(shelf.appendingPathComponent("notes.pdf"), to: .exams, course: "SORT 1") == nil
               && FileManager.default.fileExists(atPath: shelf.appendingPathComponent("notes.pdf").path))
+        // The course graph (the user's request, 2026-11-25)
+        let notes: [(file: String, path: String, pages: [String])] = [
+            ("Lecture 3.pdf", "/c/Lecture 3.pdf", [
+                "Lecture 3\nDefinition 3.1 (Limit). We say f has limit L at a if it gets close.\nExample 3.2. The limit of x^2 at 1 is 1.\nExamples are below.",
+                "Theorem 3.3 (Squeeze Theorem). If g <= f <= h and the limit of g and h is L, so is the limit of f.\nProof. By Definition 3.1 and Lemma 3.4 we get it.\nLemma 3.4. If |f| <= g then it holds, by\nTheorem 3.3 we have the rest.",
+            ]),
+            ("Lecture 4.pdf", "/c/Lecture 4.pdf", ["Theorem 1. Continuity. This follows from Thm 3.3 directly."]),
+        ]
+        let graph = CourseGraph.extract(notes)
+        let wrapped = CourseGraph.extract([("L.pdf", "/c/L.pdf", ["Theorem 2.5 (Linear Approximation). Near a, f is close to f(a).\nTheorem 3.1. If f is differentiable then the chain rule holds and it rests on\nTheorem 2.5. More text.\nSection two\nTheorem 3.2. A short title line comes before this one."])])
+        check("graph: a reference wrapped onto a new line isn't taken for a heading; one after a short title line is a heading",
+              wrapped.nodes.map(\.key) == ["Theorem 2.5", "Theorem 3.1", "Theorem 3.2"]
+              && wrapped.edges.contains(CourseGraph.Edge(from: "L.pdf#Theorem 3.1", to: "L.pdf#Theorem 2.5")))
+        let keys = graph.nodes.map(\.key)
+        func edge(_ a: String, _ b: String) -> Bool { graph.edges.contains(CourseGraph.Edge(from: a, to: b)) }
+        check("graph: a dot for each numbered or named heading, on its page; a reference broken onto a new line isn't a heading",
+              keys == ["Definition 3.1", "Example 3.2", "Theorem 3.3", "Lemma 3.4", "Theorem 1"]
+              && graph.node("Lecture 3.pdf#Theorem 3.3")?.page == 2 && graph.node("Lecture 3.pdf#Theorem 3.3")?.name == "Squeeze Theorem")
+        check("graph: a line where one names another, in the same file or the only file that has it",
+              edge("Lecture 3.pdf#Theorem 3.3", "Lecture 3.pdf#Definition 3.1") && edge("Lecture 3.pdf#Theorem 3.3", "Lecture 3.pdf#Lemma 3.4")
+              && edge("Lecture 3.pdf#Lemma 3.4", "Lecture 3.pdf#Theorem 3.3") && edge("Lecture 4.pdf#Theorem 1", "Lecture 3.pdf#Theorem 3.3"))
+        check("graph: a line where a defined term is used", edge("Lecture 3.pdf#Example 3.2", "Lecture 3.pdf#Definition 3.1")
+              && graph.uses("Lecture 3.pdf#Example 3.2").map(\.label) == ["Definition 3.1 (Limit)"]
+              && graph.usedBy("Lecture 3.pdf#Definition 3.1").count == 2)
+        check("graph: laid out the same way every time, inside the window",
+              graph == CourseGraph.extract(notes) && graph.nodes.allSatisfy { (0...1).contains($0.x) && (0...1).contains($0.y) && !$0.x.isNaN }
+              && Set(graph.nodes.map { "\(Int($0.x * 100)),\(Int($0.y * 100))" }).count == graph.nodes.count)
+        check("graph: short labels and the window's summary line",
+              GraphPane.shortLabel(graph.node("Lecture 3.pdf#Lemma 3.4")!) == "Lemma 3.4"
+              && GraphPane.shortLabel(graph.node("Lecture 3.pdf#Theorem 3.3")!) == "Squeeze Theorem"
+              && CourseWindowView.summary(graph, files: 2, loading: false) == "5 dots · 5 lines · 2 files"
+              && CourseWindowView.summary(nil, files: 0, loading: true) == "Reading the notes")
         check("sorting: the course's list shows each copy with its kind, in the kinds' order",
               CourseStore.shared.items("SORT 1", folders: []).map(\.group) == [.assignments, .examPrep]
               && CourseStore.shared.byKind("SORT 1").map(\.kind) == [.assignments, .examPrep])
@@ -859,6 +891,48 @@ enum DevTools {
         print("answer: \(answer.prefix(300))")
         print(failures == 0 ? "all passed" : "\(failures) FAILED")
         return failures == 0
+    }
+
+    /// A calculus course's notes, for the course window's pictures: numbered definitions,
+    /// theorems and examples that name each other, as lecture notes do.
+    static func sampleNotes() -> [(file: String, pages: [String])] {
+        [("Lecture 1-2.pdf", ["""
+          Definition 1.1 (Limit). The limit of f at (a,b) is L if f(x,y) gets as close to L as we like near (a,b).
+          Example 1.2. The limit of xy/(x^2+y^2) at the origin does not exist: along y = mx it depends on m.
+          Theorem 1.3 (Squeeze Theorem). If |f - L| <= g near (a,b) and g has limit 0, then f has limit L. The proof uses Definition 1.1.
+          Definition 1.4 (Continuity). f has continuity at (a,b) when its limit there is f(a,b).
+          Theorem 1.5. Sums, products and quotients keep continuity. This follows from Definition 1.4 and Theorem 1.3.
+          Example 1.6. By Theorem 1.5, every polynomial has continuity everywhere.
+          """]),
+         ("Lecture 3-4.pdf", ["""
+          Definition 2.1 (Partial derivative). The partial derivative of f with respect to x holds y fixed.
+          Example 2.2. For f = x^2 y the partial derivative in x is 2xy.
+          Definition 2.3 (Differentiable). f is differentiable at a when the error of the linear approximation, divided by the distance, has limit 0 (Definition 1.1).
+          Theorem 2.4. If f is differentiable at a, f has continuity at a (Definition 1.4).
+          Theorem 2.5 (Linear Approximation). Near a, f is close to f(a) plus each partial derivative times the change.
+          Lemma 2.6. If both partial derivatives have continuity near a, f is differentiable at a (Definition 2.3).
+          Corollary 2.7. Polynomials are differentiable, by Lemma 2.6 and Example 1.6.
+          """]),
+         ("Lecture 5-6.pdf", ["""
+          Theorem 3.1 (Chain Rule). If f is differentiable and x(t), y(t) are too, then df/dt = f_x x' + f_y y'. It rests on Theorem 2.5.
+          Definition 3.2 (Gradient). The gradient is the vector of the partial derivative in each variable.
+          Definition 3.3 (Directional derivative). The rate of change along a unit vector u; it equals the gradient dotted with u, by Theorem 3.1.
+          Theorem 3.4. The directional derivative is largest in the direction of the gradient (Definition 3.2).
+          Example 3.5. The directional derivative of x e^y at (1,0) towards (3,4)/5 uses Definition 3.3.
+          """]),
+         ("Lecture 7-8.pdf", ["""
+          Definition 4.1 (Critical point). A point where the gradient is zero or does not exist.
+          Definition 4.2 (Hessian matrix). The matrix of second partial derivative values.
+          Theorem 4.3 (Second Derivative Test). At a critical point, the Hessian matrix tells a local max, a local min or a saddle point.
+          Example 4.4. x^2 - y^2 has a saddle point at the origin by Theorem 4.3.
+          Theorem 4.5 (Lagrange Multipliers). At a max of f on g = c, the gradient of f is a multiple of the gradient of g.
+          Example 4.6. Maximise xy on x + y = 10 with Theorem 4.5.
+          """]),
+         ("Lecture 9.pdf", ["""
+          Definition 5.1 (Jacobian). The matrix of each partial derivative of a mapping.
+          Theorem 5.2 (Inverse Mapping Theorem). If the Jacobian is invertible at a, the mapping has a local inverse. The proof uses Theorem 3.1.
+          Example 5.3. For polar coordinates the Jacobian is r.
+          """])]
     }
 
     @MainActor
@@ -1259,6 +1333,40 @@ enum DevTools {
                 return NSRect(x: 0, y: canvas.height - 430, width: canvas.width, height: 430)
             }
             print("rendered \(name)  island=\(Int(model.islandSize.width))x\(Int(model.islandSize.height))")
+        }
+
+        // The course window: a sample calculus course's graph, a picked theorem with its page, and its files.
+        let notesDir = FileManager.default.temporaryDirectory.appendingPathComponent("studynotch-render-notes", isDirectory: true)
+        try? FileManager.default.createDirectory(at: notesDir, withIntermediateDirectories: true)
+        let sample = sampleNotes().map { doc -> (file: String, path: String, pages: [String]) in
+            let url = notesDir.appendingPathComponent(doc.file)
+            makePDF(at: url, pages: doc.pages)
+            return (doc.file, url.path, doc.pages)
+        }
+        let graph = CourseGraph.extract(sample)
+        let windowSize = CGSize(width: 1080, height: 680)
+        func courseState(_ tab: CourseWindowState.Tab, picked: String? = nil) -> CourseWindowState {
+            let s = CourseWindowState()
+            s.course = "MATH 237"
+            s.graph = graph
+            s.tab = tab
+            s.selected = picked
+            s.files = [(.outline, [URL(fileURLWithPath: "/c/Course outline F25.pdf")]),
+                       (.lectureNotes, sample.map { URL(fileURLWithPath: $0.path) }),
+                       (.assignments, [URL(fileURLWithPath: "/c/A1.pdf"), URL(fileURLWithPath: "/c/A2.pdf")]),
+                       (.quizzes, [URL(fileURLWithPath: "/c/Quiz 1.pdf"), URL(fileURLWithPath: "/c/Quiz 2.pdf")]),
+                       (.exams, [URL(fileURLWithPath: "/c/Midterm 2024.pdf")]),
+                       (.examPrep, [URL(fileURLWithPath: "/c/Practice midterm.pdf")])]
+            s.linked = Set(sample.map(\.path))
+            return s
+        }
+        for (name, state) in [("15-course-graph", courseState(.graph)),
+                              ("15b-course-graph-picked", courseState(.graph, picked: "Lecture 7-8.pdf#Theorem 4.3")),
+                              ("15c-course-files", courseState(.files))] {
+            snapshot(name, canvas: windowSize, view: CourseWindowView(state: state).frame(width: windowSize.width, height: windowSize.height)) {
+                NSRect(origin: .zero, size: $0)
+            }
+            print("rendered \(name)  dots=\(graph.nodes.count) lines=\(graph.edges.count)")
         }
 
         // The mascot on its own, large, for the design notes and the website.
