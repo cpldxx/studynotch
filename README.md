@@ -70,6 +70,7 @@ Then select some text anywhere, right-click, and press **Ask StudyNotch** above 
 - **Link folder** links a folder you already keep. Its PDFs are read where they are; nothing is copied, and the folder is never written to.
 - **Add PDFs** copies single PDFs into the course. Or drop PDFs or a folder onto the island.
 - **StudyNotch sorts the files by itself**: course outline, lecture notes, course notes, assignments, quizzes, exams, exam prep, or other, from each file’s name, its folder’s name or the top of its first page. Copied PDFs move into a folder of that name; files in a linked folder stay where they are and are only grouped. Click a file’s kind on the Edit page to put it under another.
+- **A course works like a project.** Every question in it gets the course’s notes, its files by kind and its memory: a line for each earlier question, kept in `memory.md` in the course’s folder. So an answer can say “you asked about this in Lecture 5” or point to the quiz that tests it. Delete a line there to have it forgotten.
 - What you pick for a new course only waits in the list. **Add** makes the course; close the tab without it and nothing is kept.
 - **Edit** on a course’s card changes it later: link or unlink folders, add or remove PDFs, rename it, or remove it. Removed things go to the Trash.
 
@@ -89,6 +90,7 @@ Answers come back in the language you type: ask in Korean and the answer is in K
 |---|---|
 | The selected text, or one capture | Which apps and sites you visited |
 | Your course notes and the text of the matching page | Files in a linked folder that aren’t PDFs |
+| The course’s memory (a line for each earlier question in it) and its file names by kind | |
 | Any page of the course’s PDFs the AI opens to answer | Your password: every sign-in happens in the service’s own page |
 | The app and window title you were reading in, and your question | |
 

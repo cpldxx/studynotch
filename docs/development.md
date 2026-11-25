@@ -20,6 +20,7 @@ The build is signed with a Developer ID or Apple Development certificate when th
 | `.build/debug/StudyNotch --uitest` | The AI card and the Add tab in the real window, including one real question each to Claude and ChatGPT | Yes |
 | `.build/debug/StudyNotch --asktest [image]` | One real question, as the app sends it. `STUDYNOTCH_AI=codex-cli` picks ChatGPT | Yes |
 | `.build/debug/StudyNotch --asktest-claude-app` | The real question flow with Claude: a question and a follow-up kept as one named session in the course’s folder, and the Claude app taking it (its log). Leaves one “STUDYNOTCH TEST” session in the Claude app | Yes |
+| `.build/debug/StudyNotch --asktest-memory` | A real question with Claude in a course that already has a memory line and a quiz: the answer has to quote the earlier question and name the quiz. Not kept in the Claude app | Yes |
 | `.build/debug/StudyNotch --asktest-course` | A real question the AI can only answer by opening the course’s files itself | Yes |
 | `.build/debug/StudyNotch --render <folder>` | A picture of every island and question-window state, to look at | No |
 | `.build/debug/StudyNotch --render-site site/assets/img/app` | The same pictures on a transparent background, for the site and this README | No |
@@ -76,6 +77,7 @@ Signing in to Cloudflare (`npx wrangler@4 login`) is done by the owner of the ac
     ├── course.md        course notes, sent in front of every question
     ├── materials/       PDFs copied into the course, one folder per kind (Lecture notes, Quizzes, Exams, …)
     ├── text/            every PDF of the course as text, page by page: what the AI may open
+    ├── memory.md        a line per question asked in the course; the latest go with each question
     ├── cards.md         review cards
     └── log/             questions and answers by date
 ```

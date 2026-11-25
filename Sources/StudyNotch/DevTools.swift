@@ -446,6 +446,22 @@ enum DevTools {
                                history: [], question: "Why?").contains("course_files")
               && Prompts.system(language: "en").contains("<course_files>")
               && AddPage.projectLine(.claudeCLI) == "Claude can open these when it answers." && AddPage.projectLine(nil).hasPrefix("Connect an AI"))
+        let remembered = CourseStore.memoryLine(date: Date(), question: "I don’t get this", quote: "If f is\ndifferentiable",
+                                                answer: "It means a tangent plane fits.\n\n**Source: Lecture 9.pdf p.2**")
+        check("memory: one line per answer, with the question, the picked text and where the answer came from",
+              remembered.hasPrefix("- ") && remembered.hasSuffix(" · I don’t get this · “If f is differentiable” · Lecture 9.pdf p.2")
+              && !CourseStore.memoryLine(date: Date(), question: "Example", quote: nil, answer: "No source line").contains("“"))
+        CourseStore.shared.remember(course: "PROJ 1", line: "- 2026-11-24 · A")
+        CourseStore.shared.remember(course: "PROJ 1", line: "- 2026-11-25 · B")
+        check("memory: kept in the course's own folder, oldest first", CourseStore.shared.memory("PROJ 1") == ["- 2026-11-24 · A", "- 2026-11-25 · B"])
+        let shared = Prompts.user(course: "PROJ 1", note: "", located: nil, quote: "q", hasImage: false, sourceApp: "", sourceTitle: "",
+                                  history: [], question: "Why?", files: CourseFiles(text: "/c/text", pdfs: "/c/materials", count: 15),
+                                  kinds: [(.quizzes, ["Quiz 1.pdf"]), (.exams, (1...14).map { "Exam \($0).pdf" })],
+                                  memory: CourseStore.shared.memory("PROJ 1"))
+        check("project: every question in a course carries the course's memory and its files by kind",
+              shared.contains("<course_memory>") && shared.contains("- 2026-11-25 · B") && shared.contains("- Quizzes: Quiz 1.pdf")
+              && shared.contains("Exam 12.pdf, and 2 more") && !shared.contains("Exam 13.pdf")
+              && !withFiles.contains("<course_memory>") && !withFiles.contains("The files by kind"))
 
         // Nothing leaves these tests in the real Trash.
         var trashed: [String] = []
@@ -792,6 +808,59 @@ enum DevTools {
     /// that the answers came, that Claude's session file holds both questions under the session's
     /// name, and that the Claude app says it took the session (its own log). Uses the user's Claude
     /// account, and leaves one "STUDYNOTCH TEST" session in the Claude app.
+    /// A real question with Claude through the app's own flow, in a course that already has a
+    /// memory and sorted files: the answer has to use both. Not kept in the Claude app.
+    @MainActor
+    static func askMemoryTest() -> Bool {
+        _ = useTemporaryHome()
+        _ = NSApplication.shared
+        var failures = 0
+        func check(_ name: String, _ ok: Bool) {
+            if !ok { failures += 1 }
+            print("\(ok ? "PASS" : "FAIL")  \(name)")
+            fflush(stdout)
+        }
+        func spin(_ seconds: Double, until done: () -> Bool) {
+            let end = Date().addingTimeInterval(seconds)
+            while !done() && Date() < end { RunLoop.main.run(until: Date().addingTimeInterval(0.2)) }
+        }
+        CLILocator.shared.scan()
+        guard AIEngine.shared.installed(.claudeCLI) else { print("Claude Code is not on this Mac"); return false }
+        AIEngine.shared.refreshStatus()
+        spin(40) { AIEngine.shared.isSignedIn(.claudeCLI) != nil }
+        guard AIEngine.shared.isSignedIn(.claudeCLI) == true else { print("Claude isn't signed in on this Mac"); return false }
+
+        let course = "STUDYNOTCH MEMORY"
+        let own = CourseStore.shared.dir(course).appendingPathComponent("materials")
+        makePDF(at: own.appendingPathComponent("Lecture 7.pdf"), pages: [
+            "Lecture 7. Lagrange multipliers. To optimise f subject to g = c, solve grad f = lambda grad g together with g = c."])
+        makePDF(at: own.appendingPathComponent("Quiz 4.pdf"), pages: [
+            "Quiz 4. Question 1 (5 marks). Use Lagrange multipliers to maximise f(x,y) = xy subject to x + y = 10. Show the system you solve."])
+        CourseStore.shared.sortOwn(course)
+        CourseStore.shared.remember(course: course, line: "- 2026-11-20 · I don’t get this · “the KAPPA-31 condition” · Lecture 7.pdf p.1")
+
+        let m = AppModel()
+        m.config.ai = AISettings(provider: AIKind.claudeCLI.rawValue, keepInClaude: false)
+        m.session = ActiveSession(preset: Preset(id: course, course: course, task: "", minutes: 25),
+                                  start: Date(), deadline: Date().addingTimeInterval(1500))
+        m.thread = AskThread(quote: "To optimise f subject to g = c, solve grad f = lambda grad g together with g = c.",
+                             imagePath: nil, sourceApp: "Preview", sourceTitle: "Lecture 7.pdf")
+        let started = Date()
+        m.ask(prompt: "Answer in two short lines. Line 1: what did I ask about earlier in this course? Quote its made-up name. "
+                      + "Line 2: how is this tested in this course's quizzes? Name the quiz file.", display: "Memory test")
+        spin(240) { m.thread?.busy == false }
+        let answer = m.thread?.answer ?? ""
+        check("the answer came (\(Int(Date().timeIntervalSince(started)))s)", !answer.isEmpty && m.thread?.error == nil)
+        check("it knew what was asked earlier in the course (its memory)", answer.contains("KAPPA-31"))
+        check("it found how the course tests it (the quiz, from the files by kind)", answer.contains("Quiz 4"))
+        spin(5) { CourseStore.shared.memory(course).count == 2 }
+        check("the course remembers this question too", CourseStore.shared.memory(course).last?.contains("Memory test") == true)
+        check("nothing was kept in the Claude app", m.thread?.claudeSession == nil)
+        print("answer: \(answer.prefix(300))")
+        print(failures == 0 ? "all passed" : "\(failures) FAILED")
+        return failures == 0
+    }
+
     @MainActor
     static func askClaudeAppTest() -> Bool {
         _ = useTemporaryHome()

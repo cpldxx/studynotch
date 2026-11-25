@@ -567,6 +567,44 @@ final class CourseStore {
         append(entry, to: file)
     }
 
+    // MARK: - The course's memory: what was asked in it before
+
+    /// Pure: one line of a course's memory: the day, the question, the picked text and where the
+    /// answer came from ("Source: Lecture 5.pdf p.4" at its end).
+    static func memoryLine(date: Date, question: String, quote: String?, answer: String) -> String {
+        func oneLine(_ text: String, _ limit: Int) -> String {
+            let flat = text.components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty }.joined(separator: " ")
+            return flat.count > limit ? String(flat.prefix(limit - 1)) + "…" : flat
+        }
+        var line = "- \(dayFormat.string(from: date)) · \(oneLine(question, 80))"
+        if let quote, !quote.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            line += " · “\(oneLine(quote, 70))”"
+        }
+        let source = answer.components(separatedBy: "\n").reversed()
+            .map { $0.trimmingCharacters(in: CharacterSet(charactersIn: " *_`")) }
+            .first { $0.hasPrefix("Source:") }
+            .map { String($0.dropFirst("Source:".count)).trimmingCharacters(in: .whitespaces) }
+        if let source, !source.isEmpty { line += " · \(oneLine(source, 60))" }
+        return line
+    }
+
+    /// The course's memory, oldest first: one line per question answered in it.
+    func memory(_ course: String) -> [String] {
+        let file = path(course).appendingPathComponent("memory.md")
+        let text = (try? String(contentsOf: file, encoding: .utf8)) ?? ""
+        return text.components(separatedBy: "\n").filter { $0.hasPrefix("- ") }
+    }
+
+    /// Adds a question to the course's memory, so the course's next questions know it was asked.
+    func remember(course: String, line: String) {
+        let file = dir(course).appendingPathComponent("memory.md")
+        if !FileManager.default.fileExists(atPath: file.path) {
+            try? "# What was asked in \(course)\n\nStudyNotch adds a line after each answer and sends the latest ones with every question in this course. Delete lines you don't want remembered.\n\n"
+                .write(to: file, atomically: true, encoding: .utf8)
+        }
+        append(line + "\n", to: file)
+    }
+
     func appendCard(course: String, front: String, back: String) {
         let file = dir(course).appendingPathComponent("cards.md")
         let entry = "\n## \(front.replacingOccurrences(of: "\n", with: " "))\n\n\(back)\n"

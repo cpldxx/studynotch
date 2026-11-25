@@ -63,15 +63,28 @@ enum Prompts {
         3. Write maths in LaTeX: $...$ inside a sentence, $$...$$ for an equation on its own line.
         4. When a course material excerpt is given, use its notation and terms exactly. If the answer is based on the excerpt, end with the line `Source: <file name> p.<page>`.
         5. If there is no excerpt, or it has nothing to do with the question, answer from general knowledge and end with the line `Source: not from your files`. Never make it look as if the answer came from the materials.
-        6. When a `<course_files>` section is given, you may open those files yourself, read-only. Do it only when the excerpt doesn’t cover the question, search the text copies first, and don’t narrate that you are looking. If the answer rests on a page you opened, end with `Source: <file name> p.<page>` for that page.
+        6. When a `<course_files>` section is given, you may open those files yourself, read-only. Do it only when the excerpt doesn’t cover the question, search the text copies first, and don’t narrate that you are looking. The files are listed by kind: to see how a topic is tested in this course, look in its quizzes and exams. If the answer rests on a page you opened, end with `Source: <file name> p.<page>` for that page.
         7. If it looks like an assignment or exam question, don’t give only the answer: explain how to solve it and why.
         8. No greeting, no restating the question, no closing remarks.
         """
     }
 
+    /// Pure: the course's files by kind, at most 12 names a kind, for the AI to know what to open.
+    static func kindList(_ kinds: [(kind: MaterialKind, names: [String])]) -> String {
+        guard !kinds.isEmpty else { return "" }
+        var out = "The files by kind:\n"
+        for group in kinds {
+            let shown = group.names.prefix(12).joined(separator: ", ")
+            let more = group.names.count > 12 ? ", and \(group.names.count - 12) more" : ""
+            out += "- \(group.kind.rawValue): \(shown)\(more)\n"
+        }
+        return out
+    }
+
     static func user(course: String, note: String, located: Located?, quote: String?, hasImage: Bool,
                      sourceApp: String, sourceTitle: String, history: [(q: String, a: String)], question: String,
-                     files: CourseFiles? = nil) -> String {
+                     files: CourseFiles? = nil, kinds: [(kind: MaterialKind, names: [String])] = [],
+                     memory: [String] = []) -> String {
         var parts: [String] = []
         if !course.isEmpty, course != AppConfig.generalCourse {
             parts.append("<course>\(course)</course>")
@@ -79,6 +92,15 @@ enum Prompts {
         let trimmedNote = note.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmedNote.isEmpty {
             parts.append("<course_notes>\n\(trimmedNote)\n</course_notes>")
+        }
+        if !memory.isEmpty {
+            // Shared by every question in the course, like a project's memory.
+            parts.append("""
+            <course_memory>
+            What the student asked earlier in this course, oldest first. Connect this answer to it when it helps; don't repeat old answers.
+            \(memory.suffix(15).joined(separator: "\n"))
+            </course_memory>
+            """)
         }
         if let located {
             parts.append("<course_material_excerpt file=\"\(located.file)\" page=\"\(located.page)\">\n\(located.context)\n</course_material_excerpt>")
@@ -89,8 +111,8 @@ enum Prompts {
             <course_files>
             This course has \(files.count) PDF\(files.count == 1 ? "" : "s"). You can open them yourself, read-only.
             - Every PDF as plain text, one .txt file each, with a line `=== <file name>, page <n> ===` before every page: \(files.text) (you are working in this folder; search it first)
-            - The PDFs copied into the course: \(files.pdfs)
-            </course_files>
+            - The PDFs copied into the course, one folder per kind: \(files.pdfs)
+            \(kindList(kinds))</course_files>
             """)
         }
         if !sourceApp.isEmpty {

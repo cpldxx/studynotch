@@ -16,6 +16,11 @@ if arguments.contains("--asktest-claude-app") {
     exit(ok ? 0 : 1)
 }
 
+if arguments.contains("--asktest-memory") {
+    let ok = MainActor.assumeIsolated { DevTools.askMemoryTest() }
+    exit(ok ? 0 : 1)
+}
+
 if arguments.contains("--asktest-course") {
     exit(DevTools.askCourseTest() ? 0 : 1)
 }

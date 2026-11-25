@@ -1268,12 +1268,22 @@ final class AppModel: ObservableObject {
             var located: Located?
             var note = ""
             var files: CourseFiles?
+            var kinds: [(kind: MaterialKind, names: [String])] = []
+            var memory: [String] = []
             if !course.isEmpty, course != AppConfig.generalCourse {
+                // What every question in the course shares, like a project: its notes, its memory,
+                // its files by kind.
                 note = CourseStore.shared.note(course)
+                memory = CourseStore.shared.memory(course)
                 // The course is the AI's project: its PDFs, as text and as copies, in folders it may open.
                 // The API key has no way to open files; it gets the matching page only.
                 let project = CourseStore.shared.syncText(course, folders: linked)
-                if kind != .apiKey { files = project }
+                if kind != .apiKey {
+                    files = project
+                    if project != nil {
+                        kinds = CourseStore.shared.byKind(course, folders: linked).map { ($0.kind, $0.pdfs.map(\.lastPathComponent)) }
+                    }
+                }
                 if let quote = snapshot.quote {
                     located = CourseStore.shared.locate(quote, course: course, hint: snapshot.sourceTitle, folders: linked)
                 }
@@ -1285,7 +1295,7 @@ final class AppModel: ObservableObject {
             let text = Prompts.user(course: course, note: note, located: located, quote: snapshot.quote,
                                     hasImage: snapshot.imagePath != nil, sourceApp: snapshot.sourceApp,
                                     sourceTitle: snapshot.sourceTitle, history: continuing ? [] : snapshot.history,
-                                    question: prompt, files: files)
+                                    question: prompt, files: files, kinds: kinds, memory: memory)
             let language = Prompts.answerLanguage(typed: snapshot.typed)
             let request = AIRequest(system: Prompts.system(language: language), prompt: text,
                                     imagePath: snapshot.imagePath, model: AIEngine.model(settings.model, for: kind),
@@ -1326,6 +1336,10 @@ final class AppModel: ObservableObject {
             let logCourse = course.isEmpty ? AppConfig.generalCourse : course
             DispatchQueue.global(qos: .utility).async {
                 CourseStore.shared.appendLog(course: logCourse, quote: t.quote, question: t.question, answer: t.answer)
+                if logCourse != AppConfig.generalCourse {
+                    CourseStore.shared.remember(course: logCourse, line: CourseStore.memoryLine(date: Date(), question: t.question,
+                                                                                               quote: t.quote, answer: t.answer))
+                }
             }
             // The first answer: the conversation goes into the Claude app's list, behind other windows.
             if let id = t.claudeSession, !t.inClaude {
