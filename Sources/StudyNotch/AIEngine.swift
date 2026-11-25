@@ -727,11 +727,11 @@ final class AIEngine {
             }
         case "turn.failed":
             if let error = event["error"] as? [String: Any], let message = error["message"] as? String {
-                return [.failed(friendly(message, tool: "Codex", signIn: "codex login"))]
+                return [.failed(friendly(message, tool: "ChatGPT", signIn: "codex login"))]
             }
         case "error":
             if let message = event["message"] as? String {
-                return [.failed(friendly(message, tool: "Codex", signIn: "codex login"))]
+                return [.failed(friendly(message, tool: "ChatGPT", signIn: "codex login"))]
             }
         default:
             break

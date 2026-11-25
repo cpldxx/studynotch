@@ -285,6 +285,13 @@ enum DevTools {
             check("claude stream: sign-in message", false)
         }
         check("codex: agent message", AIEngine.parseCodexLine(#"{"type":"item.completed","item":{"type":"agent_message","text":" 답 "}}"#) == [.replace("답")])
+        // The sign-in message names the tile and menu item the student clicks: ChatGPT, not Codex.
+        let codexSignIn = AIEngine.parseCodexLine(#"{"type":"turn.failed","error":{"message":"401 Unauthorized"}}"#)
+            + AIEngine.parseCodexLine(#"{"type":"error","message":"Not logged in"}"#)
+        check("codex: the sign-in message names ChatGPT", codexSignIn.count == 2 && codexSignIn.allSatisfy {
+            guard case .failed(let message) = $0 else { return false }
+            return message.hasPrefix("ChatGPT isn’t signed in") && message.hasSuffix("› ChatGPT to sign in.") && !message.contains("Codex")
+        })
         check("api stream: text delta", AIEngine.parseSSELine(#"data: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"안녕"}}"#) == [.delta("안녕")])
         check("api stream: other lines ignored", AIEngine.parseSSELine("event: message_start").isEmpty
               && AIEngine.parseSSELine(#"data: {"type":"content_block_delta","delta":{"type":"thinking_delta","thinking":"x"}}"#).isEmpty)
