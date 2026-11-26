@@ -462,6 +462,13 @@ enum DevTools {
               shared.contains("<course_memory>") && shared.contains("- 2026-11-25 · B") && shared.contains("- Quizzes: Quiz 1.pdf")
               && shared.contains("Exam 12.pdf, and 2 more") && !shared.contains("Exam 13.pdf")
               && !withFiles.contains("<course_memory>") && !withFiles.contains("The files by kind"))
+        // memory.md asks to delete lines by hand; an editor's Delete Line on the last line leaves no newline at the end.
+        let memoryFile = CourseStore.shared.dir("PROJ 1").appendingPathComponent("memory.md")
+        let edited = ((try? String(contentsOf: memoryFile, encoding: .utf8)) ?? "").replacingOccurrences(of: "\n- 2026-11-25 · B\n", with: "")
+        try? edited.write(to: memoryFile, atomically: true, encoding: .utf8)
+        CourseStore.shared.remember(course: "PROJ 1", line: "- 2026-11-26 · C")
+        check("memory: a line is added on its own line when the file was edited to end without a newline",
+              !edited.hasSuffix("\n") && CourseStore.shared.memory("PROJ 1") == ["- 2026-11-24 · A", "- 2026-11-26 · C"])
 
         // Nothing leaves these tests in the real Trash.
         var trashed: [String] = []

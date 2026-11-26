@@ -553,9 +553,15 @@ final class CourseStore {
     }()
 
     private func append(_ text: String, to url: URL) {
-        guard let data = text.data(using: .utf8) else { return }
-        if let handle = try? FileHandle(forWritingTo: url) {
+        guard var data = text.data(using: .utf8) else { return }
+        if let handle = try? FileHandle(forUpdating: url) {
             defer { try? handle.close() }
+            // A file edited by hand may end without a newline (memory.md asks for lines to be
+            // deleted); the new text would join its last line.
+            if let size = try? handle.seekToEnd(), size > 0, (try? handle.seek(toOffset: size - 1)) != nil,
+               let last = try? handle.read(upToCount: 1), last != Data([0x0A]) {
+                data.insert(0x0A, at: 0)
+            }
             _ = try? handle.seekToEnd()
             try? handle.write(contentsOf: data)
         } else {
