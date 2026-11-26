@@ -25,7 +25,8 @@ struct CourseGraph: Equatable {
     }
 
     struct Node: Identifiable, Equatable {
-        /// The file and the key: "Lecture 5.pdf#Theorem 2.3".
+        /// The PDF's path and the key ("<path>#Theorem 2.3"), so two "notes.pdf" in different
+        /// folders of a linked folder stay apart.
         var id: String
         var kind: Kind
         /// "2.3", or empty for an unnumbered one with a name.
@@ -62,6 +63,8 @@ struct CourseGraph: Equatable {
     }
 
     func node(_ id: String) -> Node? { nodes.first { $0.id == id } }
+    /// The first dot with this key in a PDF of this name ("Lecture 7-8.pdf", "Theorem 4.3").
+    func node(file: String, key: String) -> Node? { nodes.first { $0.file == file && $0.key == key } }
     func uses(_ id: String) -> [Node] { edges.filter { $0.from == id }.compactMap { node($0.to) } }
     func usedBy(_ id: String) -> [Node] { edges.filter { $0.to == id }.compactMap { node($0.from) } }
     func degree(_ id: String) -> Int { edges.reduce(0) { $0 + ($1.from == id || $1.to == id ? 1 : 0) } }
@@ -95,6 +98,7 @@ struct CourseGraph: Equatable {
     static func extract(_ files: [(file: String, path: String, pages: [String])], limit: Int = 400) -> CourseGraph {
         var nodes: [Node] = []
         var blocks: [String: String] = [:]
+        var seen = Set<String>()
         for doc in files {
             // One text for the file, remembering where each page starts.
             var text = ""
@@ -118,13 +122,12 @@ struct CourseGraph: Equatable {
                 if name.isEmpty, Self.continues(ns, before: match.range.location) { continue }
                 heads.append((match.range.location, kind, number, name))
             }
-            var seen = Set<String>()
             for (i, head) in heads.enumerated() {
                 // A repeated heading ("Theorem 2.3 (cont.)" on the next slide) counts once.
                 let key = Self.key(head.kind, number: head.number, name: head.name)
-                guard seen.insert(key).inserted else { continue }
+                let id = doc.path + "#" + key
+                guard seen.insert(id).inserted else { continue }
                 let page = (starts.lastIndex { $0 <= head.at } ?? 0) + 1
-                let id = doc.file + "#" + key
                 let end = i + 1 < heads.count ? heads[i + 1].at : ns.length
                 blocks[id] = ns.substring(with: NSRange(location: head.at, length: min(1500, end - head.at)))
                 nodes.append(Node(id: id, kind: head.kind, number: head.number, name: head.name, file: doc.file, path: doc.path, page: page))
@@ -143,7 +146,7 @@ struct CourseGraph: Equatable {
                 guard let kind = Kind.from(ns.substring(with: match.range(at: 1))) else { continue }
                 let key = Self.key(kind, number: ns.substring(with: match.range(at: 2)), name: "")
                 guard key != node.key, let candidates = byKey[key] else { continue }
-                let target = candidates.first { $0.file == node.file } ?? (candidates.count == 1 ? candidates[0] : nil)
+                let target = candidates.first { $0.path == node.path } ?? (candidates.count == 1 ? candidates[0] : nil)
                 if let target, target.id != node.id { edges.insert(Edge(from: node.id, to: target.id)) }
             }
         }

@@ -564,26 +564,36 @@ enum DevTools {
         let wrapped = CourseGraph.extract([("L.pdf", "/c/L.pdf", ["Theorem 2.5 (Linear Approximation). Near a, f is close to f(a).\nTheorem 3.1. If f is differentiable then the chain rule holds and it rests on\nTheorem 2.5. More text.\nSection two\nTheorem 3.2. A short title line comes before this one."])])
         check("graph: a reference wrapped onto a new line isn't taken for a heading; one after a short title line is a heading",
               wrapped.nodes.map(\.key) == ["Theorem 2.5", "Theorem 3.1", "Theorem 3.2"]
-              && wrapped.edges.contains(CourseGraph.Edge(from: "L.pdf#Theorem 3.1", to: "L.pdf#Theorem 2.5")))
+              && wrapped.edges.contains(CourseGraph.Edge(from: "/c/L.pdf#Theorem 3.1", to: "/c/L.pdf#Theorem 2.5")))
         let keys = graph.nodes.map(\.key)
         func edge(_ a: String, _ b: String) -> Bool { graph.edges.contains(CourseGraph.Edge(from: a, to: b)) }
         check("graph: a dot for each numbered or named heading, on its page; a reference broken onto a new line isn't a heading",
               keys == ["Definition 3.1", "Example 3.2", "Theorem 3.3", "Lemma 3.4", "Theorem 1"]
-              && graph.node("Lecture 3.pdf#Theorem 3.3")?.page == 2 && graph.node("Lecture 3.pdf#Theorem 3.3")?.name == "Squeeze Theorem")
+              && graph.node("/c/Lecture 3.pdf#Theorem 3.3")?.page == 2 && graph.node("/c/Lecture 3.pdf#Theorem 3.3")?.name == "Squeeze Theorem")
         check("graph: a line where one names another, in the same file or the only file that has it",
-              edge("Lecture 3.pdf#Theorem 3.3", "Lecture 3.pdf#Definition 3.1") && edge("Lecture 3.pdf#Theorem 3.3", "Lecture 3.pdf#Lemma 3.4")
-              && edge("Lecture 3.pdf#Lemma 3.4", "Lecture 3.pdf#Theorem 3.3") && edge("Lecture 4.pdf#Theorem 1", "Lecture 3.pdf#Theorem 3.3"))
-        check("graph: a line where a defined term is used", edge("Lecture 3.pdf#Example 3.2", "Lecture 3.pdf#Definition 3.1")
-              && graph.uses("Lecture 3.pdf#Example 3.2").map(\.label) == ["Definition 3.1 (Limit)"]
-              && graph.usedBy("Lecture 3.pdf#Definition 3.1").count == 2)
+              edge("/c/Lecture 3.pdf#Theorem 3.3", "/c/Lecture 3.pdf#Definition 3.1") && edge("/c/Lecture 3.pdf#Theorem 3.3", "/c/Lecture 3.pdf#Lemma 3.4")
+              && edge("/c/Lecture 3.pdf#Lemma 3.4", "/c/Lecture 3.pdf#Theorem 3.3") && edge("/c/Lecture 4.pdf#Theorem 1", "/c/Lecture 3.pdf#Theorem 3.3"))
+        check("graph: a line where a defined term is used", edge("/c/Lecture 3.pdf#Example 3.2", "/c/Lecture 3.pdf#Definition 3.1")
+              && graph.uses("/c/Lecture 3.pdf#Example 3.2").map(\.label) == ["Definition 3.1 (Limit)"]
+              && graph.usedBy("/c/Lecture 3.pdf#Definition 3.1").count == 2)
         check("graph: laid out the same way every time, inside the window",
               graph == CourseGraph.extract(notes) && graph.nodes.allSatisfy { (0...1).contains($0.x) && (0...1).contains($0.y) && !$0.x.isNaN }
               && Set(graph.nodes.map { "\(Int($0.x * 100)),\(Int($0.y * 100))" }).count == graph.nodes.count)
         check("graph: short labels and the window's summary line",
-              GraphPane.shortLabel(graph.node("Lecture 3.pdf#Lemma 3.4")!) == "Lemma 3.4"
-              && GraphPane.shortLabel(graph.node("Lecture 3.pdf#Theorem 3.3")!) == "Squeeze Theorem"
+              GraphPane.shortLabel(graph.node("/c/Lecture 3.pdf#Lemma 3.4")!) == "Lemma 3.4"
+              && GraphPane.shortLabel(graph.node("/c/Lecture 3.pdf#Theorem 3.3")!) == "Squeeze Theorem"
               && CourseWindowView.summary(graph, files: 2, loading: false) == "5 dots · 5 lines · 2 files"
               && CourseWindowView.summary(nil, files: 0, loading: true) == "Reading the notes")
+        // A linked folder's week folders often hold PDFs of the same name, each with its own "Example 1".
+        let twins = CourseGraph.extract([
+            ("notes.pdf", "/c/Week 1/notes.pdf", ["Example 1. A first one.\nTheorem 2. It follows from Example 1."]),
+            ("notes.pdf", "/c/Week 2/notes.pdf", ["Example 1. Another one.\nTheorem 2. Again by Example 1."]),
+        ])
+        check("graph: two PDFs of the same name in different folders keep their own dots, each linked within its own file",
+              twins.nodes.count == 4 && Set(twins.nodes.map(\.id)).count == 4
+              && twins.edges == [CourseGraph.Edge(from: "/c/Week 1/notes.pdf#Theorem 2", to: "/c/Week 1/notes.pdf#Example 1"),
+                                 CourseGraph.Edge(from: "/c/Week 2/notes.pdf#Theorem 2", to: "/c/Week 2/notes.pdf#Example 1")]
+              && twins.node(file: "notes.pdf", key: "Theorem 2")?.path == "/c/Week 1/notes.pdf")
         // The course profile (the user's request, 2026-11-25)
         let sourceText = CourseStore.profileSources([(name: "Course outline.pdf", pages: ["Grading: quizzes 20%, midterm 30%, final 50%.", "", "Page 3", "Page 4"]),
                                                      (name: "Quiz 1.pdf", pages: [String(repeating: "x", count: 3000)])], limit: 2000)
@@ -1448,7 +1458,7 @@ enum DevTools {
         - Redo the practice midterm with a timer; it follows the real one's order (Practice midterm.pdf p.1)
         """
         for (name, state) in [("15-course-graph", courseState(.graph)), ("15d-course-profile", profiled),
-                              ("15b-course-graph-picked", courseState(.graph, picked: "Lecture 7-8.pdf#Theorem 4.3")),
+                              ("15b-course-graph-picked", courseState(.graph, picked: graph.node(file: "Lecture 7-8.pdf", key: "Theorem 4.3")?.id)),
                               ("15c-course-files", courseState(.files))] {
             snapshot(name, canvas: windowSize, view: CourseWindowView(state: state).frame(width: windowSize.width, height: windowSize.height)) {
                 NSRect(origin: .zero, size: $0)

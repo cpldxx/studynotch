@@ -294,7 +294,7 @@ enum UITest {
         check("graph: its files are grouped by kind", state?.files.map(\.kind) == [.lectureNotes, .quizzes])
 
         guard let w = courseWindow, let content = w.contentView, let graph = state?.graph,
-              let node = graph.node("Lecture 7-8.pdf#Theorem 4.3") else {
+              let node = graph.node(file: "Lecture 7-8.pdf", key: "Theorem 4.3") else {
             check("graph: the Second Derivative Test is a dot", false)
             return
         }
