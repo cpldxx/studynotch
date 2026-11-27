@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import WebKit
 
 /// Checks that run without the app's window: `StudyNotch --selftest` and `StudyNotch --render <folder>`.
 enum DevTools {
@@ -1500,5 +1501,62 @@ enum DevTools {
             }
             print("rendered \(name)  popup=\(Int(model.popupSize.width))x\(Int(model.popupSize.height))")
         }
+    }
+}
+
+extension DevTools {
+    /// `StudyNotch --answertest`: draws sample answers in the real web view and reads back what it
+    /// shows. No question is sent; it needs the internet only for the math and Markdown libraries.
+    @MainActor static func answerTest() -> Bool {
+        var height: CGFloat = 0
+        let coordinator = AnswerWebView.Coordinator(AnswerWebView(markdown: "", height: Binding(get: { height }, set: { height = $0 })))
+        let view = AnswerWebView.makeView(coordinator)
+        view.frame = NSRect(x: 0, y: 0, width: 400, height: 300)
+
+        func wait(_ seconds: Double, until done: () -> Bool) -> Bool {
+            let end = Date().addingTimeInterval(seconds)
+            while !done() && Date() < end { RunLoop.main.run(until: Date().addingTimeInterval(0.05)) }
+            return done()
+        }
+        func js(_ script: String) -> Any? {
+            var result: Any?, finished = false
+            view.evaluateJavaScript(script) { value, _ in result = value; finished = true }
+            _ = wait(5) { finished }
+            return result
+        }
+        /// What the page shows for an answer: its text, and how many of `selector` it drew.
+        func show(_ markdown: String, count selector: String = ".katex") -> (text: String, count: Int) {
+            coordinator.push(markdown)
+            let read = js("[document.getElementById('c').innerText, document.querySelectorAll('#c :is(\(selector))').length]") as? [Any]
+            return (read?.first as? String ?? "", read?.last as? Int ?? -1)
+        }
+
+        guard wait(15, until: { coordinator.ready }) else {
+            print("the answer page didn't load")
+            return false
+        }
+        guard wait(15, until: { js("!!(window.marked && window.katex)") as? Bool == true }) else {
+            print("the math and Markdown libraries didn't load (no internet?)")
+            return false
+        }
+
+        let math = show("The slope is $x^2$ here.\n\n$$\\int_0^1 x\\,dx$$")
+        check("math is typeset, inline and on its own line", math.count == 2 && math.text.contains("The slope is"))
+        check("the page reports its height", wait(2) { height > 10 })
+
+
+        // Raw HTML in an answer is shown as the text it is, never run.
+        let compare = show("So x<y and y>z gives x<z.")
+        check("text between < and > is not lost", compare.text.contains("x<y and y>z gives x<z"))
+        let tag = show("Use the <details open> element.\n\n<img src=x onerror=\"window.ran=1\"> <script>window.ran=1</script>", count: "img, script, details")
+        check("HTML in an answer is shown, not run", tag.count == 0 && tag.text.contains("<details open>")
+              && tag.text.contains("onerror") && wait(0.3) { false } == false && js("window.ran === undefined") as? Bool == true)
+        let small = show("H<sub>2</sub>O<br>x<sup>2</sup>", count: "sub, sup, br")
+        check("sub, sup and br still work", small.count == 3 && !small.text.contains("<"))
+        let code = show("Write `a<b>c` here.", count: "code")
+        check("code keeps its < and >", code.count == 1 && code.text.contains("a<b>c"))
+
+        print(failures == 0 ? "all passed" : "\(failures) FAILED")
+        return failures == 0
     }
 }

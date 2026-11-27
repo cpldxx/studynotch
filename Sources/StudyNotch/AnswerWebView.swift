@@ -9,13 +9,16 @@ struct AnswerWebView: NSViewRepresentable {
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
-    func makeNSView(context: Context) -> WKWebView {
+    func makeNSView(context: Context) -> WKWebView { Self.makeView(context.coordinator) }
+
+    /// The web view with the answer page loading in it. `--answertest` makes one the same way.
+    static func makeView(_ coordinator: Coordinator) -> WKWebView {
         let configuration = WKWebViewConfiguration()
-        configuration.userContentController.add(context.coordinator, name: "height")
+        configuration.userContentController.add(coordinator, name: "height")
         let view = WKWebView(frame: .zero, configuration: configuration)
         view.setValue(false, forKey: "drawsBackground")
-        view.navigationDelegate = context.coordinator
-        context.coordinator.web = view
+        view.navigationDelegate = coordinator
+        coordinator.web = view
         view.loadHTMLString(Self.page, baseURL: nil)
         return view
     }
@@ -28,7 +31,7 @@ struct AnswerWebView: NSViewRepresentable {
     final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
         var parent: AnswerWebView
         weak var web: WKWebView?
-        private var ready = false
+        private(set) var ready = false
         private var shown: String?
 
         init(_ parent: AnswerWebView) {
@@ -86,6 +89,12 @@ struct AnswerWebView: NSViewRepresentable {
     <div id="c"></div>
     <script>
       function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+      // An answer is text. HTML inside it is shown as written, never run: "x<y and y>z" used to
+      // lose everything between the two signs. Only sub, sup and br are kept as tags.
+      if (window.marked) marked.use({ renderer: { html: function (h) {
+        var text = typeof h === 'string' ? h : h.text;
+        return /^<\/?(sub|sup|br)\s*\/?>$/i.test(text.trim()) ? text : esc(text);
+      } } });
       function render(md) {
         var math = [];
         function keep(tex, display) { math.push({ t: tex, d: display }); return '@@M' + (math.length - 1) + '@@'; }

@@ -36,6 +36,7 @@ swift build && .build/debug/StudyNotch --selftest
 .build/debug/StudyNotch --asktest-profile                    # writes a course's profile for real with Claude from an outline, a quiz and a midterm
 .build/debug/StudyNotch --uitest-eyes                        # how far the eyes move with the pointer, in the real window
 .build/debug/StudyNotch --uitest-graph                       # the Graph button, then a theorem clicked in the course window
+.build/debug/StudyNotch --answertest                         # sample answers drawn in the real web view (no question is sent; needs the internet)
 ```
 
 Site preview: `python3 -m http.server 4173 --directory site`, or with no server `open site/index.html` (every path is relative).
