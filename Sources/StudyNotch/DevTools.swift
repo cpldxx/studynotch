@@ -1568,6 +1568,21 @@ extension DevTools {
         let spaced = show("Then $a + b$ and $ c $ and \\(d\\).")
         check("math with spaces inside is still math", spaced.count >= 2 && spaced.text.contains("Then"))
 
+        // A link opens in the browser; the answer stays where it is.
+        var opened: [URL] = []
+        coordinator.open = { opened.append($0) }
+        let link = show("See [the notes](https://example.com/notes?week=2) and [this](javascript:window.ran=2) and [that](file:///etc/hosts).", count: "a[href]")
+        check("only web links are links", link.count == 1 && link.text.contains("this") && link.text.contains("that"))
+        _ = js("document.querySelectorAll('#c a').forEach(function (a) { a.click(); }); 1")
+        check("a clicked link goes to the browser", wait(3) { !opened.isEmpty }
+              && opened.map(\.absoluteString) == ["https://example.com/notes?week=2"])
+        _ = wait(1) { false }
+        _ = js("location.href = 'https://example.com/away'; 1")
+        _ = wait(1) { false }
+        let after = show("Still **here**.", count: "strong")
+        check("the answer page stays after a link", after.count == 1 && after.text.contains("Still here")
+              && opened.count == 1 && js("window.ran === undefined") as? Bool == true)
+
         print(failures == 0 ? "all passed" : "\(failures) FAILED")
         return failures == 0
     }

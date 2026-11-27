@@ -33,6 +33,8 @@ struct AnswerWebView: NSViewRepresentable {
         weak var web: WKWebView?
         private(set) var ready = false
         private var shown: String?
+        /// Where a clicked link goes: the browser. `--answertest` only notes it.
+        var open: (URL) -> Void = { NSWorkspace.shared.open($0) }
 
         init(_ parent: AnswerWebView) {
             self.parent = parent
@@ -49,6 +51,21 @@ struct AnswerWebView: NSViewRepresentable {
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
             ready = true
             push(parent.markdown)
+        }
+
+        /// This view only ever shows the answer page. A clicked web link opens in the browser
+        /// instead of replacing the answer; nothing else may take the page anywhere.
+        func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction,
+                     decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+            let url = action.request.url
+            if action.navigationType == .other, url?.scheme == "about" {
+                decisionHandler(.allow)
+                return
+            }
+            decisionHandler(.cancel)
+            if action.navigationType == .linkActivated, let url, ["http", "https"].contains(url.scheme?.lowercased() ?? "") {
+                open(url)
+            }
         }
 
         func userContentController(_ controller: WKUserContentController, didReceive message: WKScriptMessage) {
@@ -116,6 +133,10 @@ struct AnswerWebView: NSViewRepresentable {
         });
         var box = document.getElementById('c');
         box.innerHTML = html;
+        // Only web links stay links; a click on one is sent to the browser by the app.
+        box.querySelectorAll('a').forEach(function (a) {
+          if (!/^https?:\/\//i.test(a.getAttribute('href') || '')) a.removeAttribute('href');
+        });
         window.webkit.messageHandlers.height.postMessage(Math.ceil(box.getBoundingClientRect().height));
       }
     </script>
