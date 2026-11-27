@@ -97,11 +97,16 @@ struct AnswerWebView: NSViewRepresentable {
       } } });
       function render(md) {
         var math = [];
-        function keep(tex, display) { math.push({ t: tex, d: display }); return '@@M' + (math.length - 1) + '@@'; }
+        function keep(tex, display) { math.push({ t: tex.replace(/@@D@@/g, '\\$'), d: display }); return '@@M' + (math.length - 1) + '@@'; }
+        // "\$" is a dollar sign, not the start of math ("\\" is still a line break).
+        md = md.replace(/\\\\|\\\$/g, function (m) { return m === '\\$' ? '@@D@@' : m; });
         md = md.replace(/\$\$([\s\S]+?)\$\$/g, function (m, a) { return keep(a, true); });
         md = md.replace(/\\\[([\s\S]+?)\\\]/g, function (m, a) { return keep(a, true); });
         md = md.replace(/\\\(([\s\S]+?)\\\)/g, function (m, a) { return keep(a, false); });
-        md = md.replace(/\$([^\$\n]+?)\$/g, function (m, a) { return keep(a, false); });
+        // Inline math hugs its dollar signs and isn't followed by a digit, so the two prices in
+        // "costs $95 today and pays $100" are not read as one formula.
+        md = md.replace(/\$([^\$\n\s](?:[^\$\n]*?[^\$\n\s])?)\$(?!\d)/g, function (m, a) { return keep(a, false); });
+        md = md.replace(/@@D@@/g, '\\$');
         var html = window.marked ? marked.parse(md) : esc(md).replace(/\n/g, '<br>');
         html = html.replace(/@@M(\d+)@@/g, function (m, i) {
           var x = math[+i];

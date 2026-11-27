@@ -1556,6 +1556,18 @@ extension DevTools {
         let code = show("Write `a<b>c` here.", count: "code")
         check("code keeps its < and >", code.count == 1 && code.text.contains("a<b>c"))
 
+        // Prices are not math.
+        let price = show("A bond costs $95 today and pays $100 in a year.")
+        check("two prices in a sentence stay as text", price.count == 0 && price.text.contains("costs $95 today and pays $100 in"))
+        let range = show("It is $5-$10 a share, so $n$ shares cost at most $10n$.")
+        check("a price range stays text beside real math", range.count == 2 && range.text.contains("$5-$10 a share"))
+        let escaped = show("It pays \\$5 now and \\$x later, with $x > 5$.")
+        check("an escaped dollar is a dollar", escaped.count == 1 && escaped.text.contains("$5 now and $x later"))
+        let lines = show("$$a \\\\ b \\\\$$ and the price is \\$5.")
+        check("a line break before the closing $$ is not an escaped dollar", lines.count == 1 && lines.text.contains("the price is $5."))
+        let spaced = show("Then $a + b$ and $ c $ and \\(d\\).")
+        check("math with spaces inside is still math", spaced.count >= 2 && spaced.text.contains("Then"))
+
         print(failures == 0 ? "all passed" : "\(failures) FAILED")
         return failures == 0
     }

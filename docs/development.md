@@ -17,7 +17,7 @@ The build is signed with a Developer ID or Apple Development certificate when th
 | `swift build && .build/debug/StudyNotch --selftest` | Pure logic: drift rules, finding pages in PDFs, settings, parsing each AI’s output, sign-in states, course folders, the mascot’s look | No |
 | `.build/debug/StudyNotch --uitest-courses` | Clicks through the Add tab in the real window: picking, Add, closing without Add, Edit, linking, renaming, removing | No |
 | `.build/debug/StudyNotch --uitest-graph` | Clicks the Graph button on a course's card in the real window, then a theorem in the course window: its page and its links come up | No |
-| `.build/debug/StudyNotch --answertest` | Draws sample answers in the real web view and reads back what it shows: math is typeset, HTML in an answer is shown as text and never run. Needs the internet for the math and Markdown libraries | No |
+| `.build/debug/StudyNotch --answertest` | Draws sample answers in the real web view and reads back what it shows: math is typeset, prices are not, HTML in an answer is shown as text and never run. Needs the internet for the math and Markdown libraries | No |
 | `.build/debug/StudyNotch --uitest-eyes` | How far the mascot’s eyes move with the pointer, measured in the real window | No |
 | `.build/debug/StudyNotch --uitest` | The AI card and the Add tab in the real window, including one real question each to Claude and ChatGPT | Yes |
 | `.build/debug/StudyNotch --asktest [image]` | One real question, as the app sends it. `STUDYNOTCH_AI=codex-cli` picks ChatGPT | Yes |
