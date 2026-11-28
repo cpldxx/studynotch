@@ -597,6 +597,16 @@ enum DevTools {
             ("notes.pdf", "/c/Week 1/notes.pdf", ["Example 1. A first one.\nTheorem 2. It follows from Example 1."]),
             ("notes.pdf", "/c/Week 2/notes.pdf", ["Example 1. Another one.\nTheorem 2. Again by Example 1."]),
         ])
+        // A slide that runs over repeats its heading; what the second slide uses belongs to the same dot.
+        let continued = CourseGraph.extract([("L.pdf", "/c/L.pdf", [
+            "Definition 1.1 (Derivative). The limit of the difference quotient.\nTheorem 2.3 (Chain Rule). If f and g are differentiable, so is f(g(x)).",
+            "Theorem 2.3 (cont.)\nThe proof uses Definition 1.1 and Lemma 2.4.\nLemma 2.4. A product of limits is the limit of the product.",
+        ])])
+        check("graph: a repeated heading (cont.) is one dot, and what its continued part uses is linked to it",
+              continued.nodes.map(\.key) == ["Definition 1.1", "Theorem 2.3", "Lemma 2.4"]
+              && continued.node("/c/L.pdf#Theorem 2.3")?.name == "Chain Rule" && continued.node("/c/L.pdf#Theorem 2.3")?.page == 1
+              && continued.edges.contains(CourseGraph.Edge(from: "/c/L.pdf#Theorem 2.3", to: "/c/L.pdf#Lemma 2.4"))
+              && continued.edges.contains(CourseGraph.Edge(from: "/c/L.pdf#Theorem 2.3", to: "/c/L.pdf#Definition 1.1")))
         check("graph: two PDFs of the same name in different folders keep their own dots, each linked within its own file",
               twins.nodes.count == 4 && Set(twins.nodes.map(\.id)).count == 4
               && twins.edges == [CourseGraph.Edge(from: "/c/Week 1/notes.pdf#Theorem 2", to: "/c/Week 1/notes.pdf#Example 1"),

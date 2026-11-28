@@ -123,13 +123,18 @@ struct CourseGraph: Equatable {
                 heads.append((match.range.location, kind, number, name))
             }
             for (i, head) in heads.enumerated() {
-                // A repeated heading ("Theorem 2.3 (cont.)" on the next slide) counts once.
                 let key = Self.key(head.kind, number: head.number, name: head.name)
                 let id = doc.path + "#" + key
-                guard seen.insert(id).inserted else { continue }
-                let page = (starts.lastIndex { $0 <= head.at } ?? 0) + 1
                 let end = i + 1 < heads.count ? heads[i + 1].at : ns.length
-                blocks[id] = ns.substring(with: NSRange(location: head.at, length: min(1500, end - head.at)))
+                let part = ns.substring(with: NSRange(location: head.at, length: min(1500, end - head.at)))
+                // A repeated heading ("Theorem 2.3 (cont.)" on the next slide) counts once, and
+                // what its part uses is read as the first one's.
+                guard seen.insert(id).inserted else {
+                    blocks[id] = String(((blocks[id] ?? "") + "\n" + part).prefix(4500))
+                    continue
+                }
+                let page = (starts.lastIndex { $0 <= head.at } ?? 0) + 1
+                blocks[id] = part
                 nodes.append(Node(id: id, kind: head.kind, number: head.number, name: head.name, file: doc.file, path: doc.path, page: page))
             }
         }
