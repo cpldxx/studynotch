@@ -599,23 +599,35 @@ final class CourseStore {
 
     /// Pure: the text a profile is written from: the first pages of each file, marked with its
     /// name and page so the AI can say where a fact is, and no more than `limit` characters.
+    /// Every file's first page goes in before any file's second, so a few long files can't use up
+    /// the room the others need; each file's pages still come out together, in the files' order.
     static func profileSources(_ files: [(name: String, pages: [String])], pagesEach: Int = 3, limit: Int = 30000) -> String {
-        var out = ""
-        for file in files {
-            for (i, page) in file.pages.prefix(pagesEach).enumerated() {
-                let body = page.trimmingCharacters(in: .whitespacesAndNewlines)
+        var taken = Array(repeating: [String](), count: files.count)
+        // A file whose next page didn't fit gives no more pages.
+        var full = Array(repeating: false, count: files.count)
+        var used = 0
+        for page in 0..<pagesEach {
+            for (f, file) in files.enumerated() where !full[f] && page < file.pages.count {
+                let body = file.pages[page].trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !body.isEmpty else { continue }
-                let block = "=== \(file.name), page \(i + 1) ===\n" + String(body.prefix(2500)) + "\n\n"
-                if out.count + block.count > limit { return out }
-                out += block
+                let block = "=== \(file.name), page \(page + 1) ===\n" + String(body.prefix(2500)) + "\n\n"
+                guard used + block.count <= limit else { full[f] = true; continue }
+                taken[f].append(block)
+                used += block.count
             }
         }
-        return out
+        return taken.flatMap { $0 }.joined()
+    }
+
+    /// Pure: the groups a profile is written from, in `profileKinds`' order: the outline, then the
+    /// quizzes, exams and exam prep, and the assignments last (`byKind` puts them before the quizzes).
+    static func profileGroups(_ groups: [(kind: MaterialKind, pdfs: [URL])]) -> [(kind: MaterialKind, pdfs: [URL])] {
+        profileKinds.compactMap { kind in groups.first { $0.kind == kind } }
     }
 
     /// The course's outline, quizzes, exams, exam prep and assignments, as `profileSources`.
     func profileSources(_ course: String, folders: [String]) -> (text: String, kinds: [(kind: MaterialKind, names: [String])]) {
-        let groups = byKind(course, folders: folders).filter { Self.profileKinds.contains($0.kind) }
+        let groups = Self.profileGroups(byKind(course, folders: folders))
         let files = groups.flatMap(\.pdfs).map { (name: $0.lastPathComponent, pages: pages(of: $0)) }
         return (Self.profileSources(files), groups.map { ($0.kind, $0.pdfs.map(\.lastPathComponent)) })
     }

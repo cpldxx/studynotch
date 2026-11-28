@@ -608,6 +608,20 @@ enum DevTools {
         check("profile: the first pages of each file, marked with name and page, empty pages skipped, cut at the limit",
               sourceText.hasPrefix("=== Course outline.pdf, page 1 ===\nGrading: quizzes 20%") && sourceText.contains("=== Course outline.pdf, page 3 ===")
               && !sourceText.contains("page 2 ===") && !sourceText.contains("page 4 ===") && !sourceText.contains("Quiz 1.pdf"))
+        // Long assignments listed first used to fill the whole budget, so the exams never reached the AI.
+        let longPage = String(repeating: "y", count: 400)
+        let spread = CourseStore.profileSources([(name: "A1.pdf", pages: [longPage, longPage, longPage]), (name: "A2.pdf", pages: [longPage, longPage, longPage]),
+                                                 (name: "Midterm.pdf", pages: [longPage, longPage])], limit: 2200)
+        let at = { (mark: String) -> String.Index? in spread.range(of: mark)?.lowerBound }
+        check("profile: every file's first page goes in before any file's second; each file's pages stay together",
+              at("=== Midterm.pdf, page 1 ===") != nil && !spread.contains("page 3 ===") && !spread.contains("Midterm.pdf, page 2")
+              && at("=== A1.pdf, page 2 ===").flatMap { a in at("=== A2.pdf, page 1 ===").map { a < $0 } } == true
+              && at("=== A2.pdf, page 2 ===").flatMap { a in at("=== Midterm.pdf, page 1 ===").map { a < $0 } } == true)
+        let anyPDF = [URL(fileURLWithPath: "/c/x.pdf")]
+        check("profile: written from the outline, then the quizzes, exams and exam prep, with the assignments last",
+              CourseStore.profileGroups([(.outline, anyPDF), (.lectureNotes, anyPDF), (.assignments, anyPDF), (.quizzes, anyPDF),
+                                         (.exams, anyPDF), (.examPrep, anyPDF), (.other, anyPDF)]).map(\.kind)
+              == [.outline, .quizzes, .exams, .examPrep, .assignments])
         let profiled = Prompts.user(course: "PROJ 1", note: "", located: nil, quote: "q", hasImage: false, sourceApp: "", sourceTitle: "",
                                     history: [], question: "Why?", profile: "## Grading\n- Midterm 30% (Course outline.pdf p.1)")
         check("profile: every question in the course carries it; writing it sends the files' text, by kind",
